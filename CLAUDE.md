@@ -38,7 +38,11 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
    - Server actions: `src/lib/auth/actions.ts` (login/signup/signInWithGoogle/signOut)
    - Halaman: `/login`, `/register`, `/dashboard` (terproteksi), `/auth/callback`
    - Grants role Supabase: `supabase/migrations/0002_grants.sql` (WAJIB dijalankan)
-3. ⬜ Profit Checker & Promo Simulator (client-side, tanpa AI)
+3. ✅ Profit Checker & Promo Simulator (client-side, tanpa AI)  ← Tahap 3 selesai
+   - Logika murni: `src/lib/calc/profit.ts`, `src/lib/calc/promo.ts`, `src/lib/format.ts`
+   - UI: `src/components/tools/*`, kontrol bersama `controls.tsx`
+   - Shell dashboard: `src/app/dashboard/layout.tsx` + `src/components/dashboard/Sidebar.tsx`
+   - Rute: `/dashboard/profit`, `/dashboard/promo`; SEO: OG image, robots, sitemap
 4. ⬜ Produk Saya (ganti window.storage → Supabase)
 5. ⬜ Sales Analyzer & Product Doctor (API route + Anthropic)
 6. ⬜ Midtrans payment

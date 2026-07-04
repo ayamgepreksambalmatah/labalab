@@ -1,90 +1,126 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Logo } from "@/components/Logo";
-import { signOut } from "@/lib/auth/actions";
 import { createServerClient } from "@/lib/supabase/server";
+
+export const metadata: Metadata = {
+  title: "Ringkasan",
+  robots: { index: false, follow: false },
+};
+
+const TOOLS = [
+  {
+    href: "/dashboard/profit",
+    icon: "🧮",
+    title: "Cek Untung Asli",
+    desc: "Hitung margin bersih setelah semua potongan marketplace.",
+    ready: true,
+  },
+  {
+    href: "/dashboard/promo",
+    icon: "🔥",
+    title: "Promo Simulator",
+    desc: "Cek kelayakan ikut flash sale sebelum rugi.",
+    ready: true,
+  },
+  {
+    href: "/dashboard/products",
+    icon: "📦",
+    title: "Produk Saya",
+    desc: "Simpan produk & pakai ulang di semua tools.",
+    ready: false,
+  },
+  {
+    href: "/dashboard/analyzer",
+    icon: "📊",
+    title: "Sales Analyzer",
+    desc: "Upload laporan penjualan, temukan profit hilang.",
+    ready: false,
+  },
+  {
+    href: "/dashboard/doctor",
+    icon: "🩺",
+    title: "Product Doctor",
+    desc: "Audit listing produk pakai AI.",
+    ready: false,
+  },
+];
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
-  // Middleware sudah menjaga, tapi defensif di server juga.
   if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, store_name, plan, email")
+    .select("full_name, email, plan")
     .eq("id", user.id)
     .single();
 
-  const isPro = profile?.plan === "pro";
   const displayName = profile?.full_name || profile?.email || "Seller";
+  const isPro = profile?.plan === "pro";
 
   return (
-    <main className="min-h-screen px-6 py-12">
-      <div className="mx-auto max-w-2xl">
-        <header className="flex items-center justify-between">
-          <Logo size={26} />
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-[10px] border border-border px-4 py-2 text-[13px] font-semibold text-muted hover:bg-surface2 hover:text-text transition-colors"
-            >
-              Keluar
-            </button>
-          </form>
-        </header>
-
-        <div className="mt-10">
+    <div>
+      <div className="flex items-start justify-between gap-4">
+        <div>
           <h1 className="font-display text-2xl font-extrabold tracking-tight">
             Halo, {displayName} 👋
           </h1>
           <p className="mt-1 text-[13px] text-muted">
-            Selamat datang di dashboard LabaLab.
+            Pilih tools di bawah untuk mulai meracik profit toko kamu.
           </p>
         </div>
-
-        <div className="mt-6 rounded-card border border-border bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted">
-                Plan aktif
-              </p>
-              <p className="mt-1 font-display text-lg font-bold">
-                {isPro ? "Jualan Pro" : "Gratis"}
-              </p>
-            </div>
-            <span
-              className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                isPro
-                  ? "border border-green/40 bg-green/10 text-green"
-                  : "border border-border bg-surface2 text-muted"
-              }`}
-            >
-              {isPro ? "Pro" : "Free"}
-            </span>
-          </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
-            <div className="rounded-[10px] border border-border bg-surface2 px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted">Email</p>
-              <p className="mt-0.5 truncate text-text">{profile?.email}</p>
-            </div>
-            <div className="rounded-[10px] border border-border bg-surface2 px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wider text-muted">Toko</p>
-              <p className="mt-0.5 truncate text-text">
-                {profile?.store_name || "—"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <p className="mt-6 text-center text-[12px] text-muted">
-          Tahap 2 (auth) selesai. Berikutnya: tools Profit Checker & Promo
-          Simulator.
-        </p>
+        <span
+          className={`shrink-0 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
+            isPro
+              ? "border border-green/40 bg-green/10 text-green"
+              : "border border-border bg-surface2 text-muted"
+          }`}
+        >
+          {isPro ? "Pro" : "Free"}
+        </span>
       </div>
-    </main>
+
+      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+        {TOOLS.map((tool) =>
+          tool.ready ? (
+            <Link
+              key={tool.href}
+              href={tool.href}
+              className="group rounded-card border border-border bg-surface p-5 transition-colors hover:border-accent/50 hover:bg-surface2"
+            >
+              <div className="text-2xl">{tool.icon}</div>
+              <h2 className="mt-3 font-display text-[15px] font-bold group-hover:text-accent2">
+                {tool.title}
+              </h2>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+                {tool.desc}
+              </p>
+            </Link>
+          ) : (
+            <div
+              key={tool.href}
+              className="rounded-card border border-border bg-surface/50 p-5 opacity-60"
+            >
+              <div className="flex items-start justify-between">
+                <div className="text-2xl">{tool.icon}</div>
+                <span className="rounded-full border border-border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-muted">
+                  Segera
+                </span>
+              </div>
+              <h2 className="mt-3 font-display text-[15px] font-bold">
+                {tool.title}
+              </h2>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-muted">
+                {tool.desc}
+              </p>
+            </div>
+          ),
+        )}
+      </div>
+    </div>
   );
 }

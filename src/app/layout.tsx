@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_DESCRIPTION,
+} from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -14,23 +20,29 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-const APP_NAME = "LabaLab";
-const APP_TAGLINE = "LabaLab — Racik Profit Toko Kamu";
-const APP_DESC =
-  "Hitung margin bersih, temukan profit hilang, simulasi promo, dan optimasi listing produk Shopee/Tokopedia/TikTok Shop dengan bantuan AI.";
-
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: APP_TAGLINE,
-    template: `%s · ${APP_NAME}`,
+    default: SITE_TAGLINE,
+    template: `%s · ${SITE_NAME}`,
   },
-  description: APP_DESC,
-  applicationName: APP_NAME,
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: APP_TAGLINE,
-    description: APP_DESC,
-    siteName: APP_NAME,
+    title: SITE_TAGLINE,
+    description: SITE_DESCRIPTION,
+    siteName: SITE_NAME,
+    url: SITE_URL,
+    locale: "id_ID",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TAGLINE,
+    description: SITE_DESCRIPTION,
   },
 };
 

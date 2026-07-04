@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AuthShell } from "@/components/auth/AuthShell";
+
+export const metadata: Metadata = {
+  title: "Masuk",
+  alternates: { canonical: "/login" },
+};
 import { LoginForm } from "@/components/auth/LoginForm";
 import { GoogleButton } from "@/components/auth/GoogleButton";
 import { createServerClient } from "@/lib/supabase/server";
