@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Plan, Platform } from "@/types/database";
-import type { Product } from "@/lib/products/queries";
+import type { FaqItem, Product } from "@/lib/products/queries";
 import {
   KATEGORI_OPTIONS,
   PLATFORM_OPTIONS,
@@ -16,12 +16,15 @@ import {
   saveProduct,
   updateProduct,
   deleteProduct,
+  type ProductInput,
 } from "@/lib/products/actions";
 import {
   Card,
   Field,
   MoneyInput,
+  NumberInput,
   SelectInput,
+  Textarea,
   TextInput,
 } from "@/components/tools/controls";
 
@@ -37,13 +40,76 @@ function marginOf(p: Product) {
   return { profit, margin };
 }
 
-const emptyForm = {
+type FormState = {
+  nama: string;
+  platform: Platform;
+  kategori: Kategori;
+  harga: number;
+  modal: number;
+  stok: number | "";
+  ukuranText: string;
+  bahan: string;
+  garansi: string;
+  caraPerawatan: string;
+  deskripsi: string;
+  faq: FaqItem[];
+};
+
+const emptyForm: FormState = {
   nama: "",
-  platform: "shopee" as Platform,
-  kategori: "fashion" as Kategori,
+  platform: "shopee",
+  kategori: "fashion",
   harga: 0,
   modal: 0,
+  stok: "",
+  ukuranText: "",
+  bahan: "",
+  garansi: "",
+  caraPerawatan: "",
+  deskripsi: "",
+  faq: [],
 };
+
+function productToForm(p: Product): FormState {
+  return {
+    nama: p.nama,
+    platform: p.platform,
+    kategori: p.kategori,
+    harga: p.harga,
+    modal: p.modal,
+    stok: p.stok ?? "",
+    ukuranText: (p.ukuran_tersedia ?? []).join(", "),
+    bahan: p.bahan ?? "",
+    garansi: p.garansi ?? "",
+    caraPerawatan: p.cara_perawatan ?? "",
+    deskripsi: p.deskripsi ?? "",
+    faq: p.faq ?? [],
+  };
+}
+
+function formToInput(form: FormState): ProductInput {
+  const ukuran = form.ukuranText
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const faq = form.faq.filter((q) => q.question.trim() || q.answer.trim());
+  return {
+    nama: form.nama,
+    platform: form.platform,
+    kategori: form.kategori,
+    harga: form.harga,
+    modal: form.modal,
+    detail: {
+      stok: form.stok === "" ? null : Number(form.stok),
+      ukuran_tersedia: ukuran.length ? ukuran : null,
+      faq: faq.length ? faq : null,
+      garansi: form.garansi.trim() || null,
+      cara_perawatan: form.caraPerawatan.trim() || null,
+      bahan: form.bahan.trim() || null,
+      deskripsi: form.deskripsi.trim() || null,
+    },
+  };
+}
 
 export function ProductsManager({
   products,
@@ -54,14 +120,16 @@ export function ProductsManager({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [tab, setTab] = useState<"dasar" | "detail">("dasar");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const limit = PLAN_LIMITS[plan].savedProducts;
   const atLimit = Number.isFinite(limit) && products.length >= limit;
 
-  // metrics
+  const set = (patch: Partial<FormState>) => setForm((f) => ({ ...f, ...patch }));
+
   let sehat = 0,
     tipis = 0,
     rugi = 0;
@@ -75,17 +143,13 @@ export function ProductsManager({
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setTab("dasar");
   }
 
   function startEdit(p: Product) {
     setEditingId(p.id);
-    setForm({
-      nama: p.nama,
-      platform: p.platform,
-      kategori: p.kategori,
-      harga: p.harga,
-      modal: p.modal,
-    });
+    setForm(productToForm(p));
+    setTab("dasar");
     setStatus(null);
     if (typeof window !== "undefined")
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -93,10 +157,11 @@ export function ProductsManager({
 
   function submit() {
     setStatus(null);
+    const input = formToInput(form);
     startTransition(async () => {
       const res = editingId
-        ? await updateProduct(editingId, form)
-        : await saveProduct(form);
+        ? await updateProduct(editingId, input)
+        : await saveProduct(input);
       if (res.ok) {
         setStatus({ msg: editingId ? "✓ Produk diperbarui" : "✓ Produk tersimpan", ok: true });
         resetForm();
@@ -115,9 +180,15 @@ export function ProductsManager({
     });
   }
 
+  // FAQ helpers
+  const addFaq = () => set({ faq: [...form.faq, { question: "", answer: "" }] });
+  const setFaq = (i: number, patch: Partial<FaqItem>) =>
+    set({ faq: form.faq.map((q, idx) => (idx === i ? { ...q, ...patch } : q)) });
+  const removeFaq = (i: number) =>
+    set({ faq: form.faq.filter((_, idx) => idx !== i) });
+
   return (
     <div>
-      {/* METRICS */}
       {products.length > 0 && (
         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Metric label="Total Produk" value={products.length} />
@@ -130,45 +201,166 @@ export function ProductsManager({
       <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
         {/* FORM */}
         <Card title={editingId ? "Edit Produk" : "Tambah Produk"} icon="➕">
-          <Field label="Nama Produk">
-            <TextInput
-              value={form.nama}
-              onChange={(v) => setForm({ ...form, nama: v })}
-              placeholder="Contoh: Kaos Oversize Hitam"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Platform">
-              <SelectInput
-                value={form.platform}
-                onChange={(v) => setForm({ ...form, platform: v })}
-                options={PLATFORM_OPTIONS}
-              />
-            </Field>
-            <Field label="Kategori">
-              <SelectInput
-                value={form.kategori}
-                onChange={(v) => setForm({ ...form, kategori: v })}
-                options={KATEGORI_OPTIONS}
-              />
-            </Field>
+          {/* Tabs */}
+          <div className="mb-4 flex gap-1 rounded-[10px] border border-border bg-surface2 p-1">
+            {(["dasar", "detail"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                  tab === t ? "bg-surface text-accent2" : "text-muted hover:text-text"
+                }`}
+              >
+                {t === "dasar" ? "Info Dasar" : "Detail Lengkap"}
+              </button>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Harga Jual">
-              <MoneyInput
-                value={form.harga || ""}
-                onChange={(v) => setForm({ ...form, harga: v })}
-                placeholder="150000"
-              />
-            </Field>
-            <Field label="Modal / HPP">
-              <MoneyInput
-                value={form.modal || ""}
-                onChange={(v) => setForm({ ...form, modal: v })}
-                placeholder="70000"
-              />
-            </Field>
-          </div>
+
+          {tab === "dasar" ? (
+            <>
+              <Field label="Nama Produk">
+                <TextInput
+                  value={form.nama}
+                  onChange={(v) => set({ nama: v })}
+                  placeholder="Contoh: Kaos Oversize Hitam"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Platform">
+                  <SelectInput
+                    value={form.platform}
+                    onChange={(v) => set({ platform: v })}
+                    options={PLATFORM_OPTIONS}
+                  />
+                </Field>
+                <Field label="Kategori">
+                  <SelectInput
+                    value={form.kategori}
+                    onChange={(v) => set({ kategori: v })}
+                    options={KATEGORI_OPTIONS}
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Harga Jual">
+                  <MoneyInput
+                    value={form.harga || ""}
+                    onChange={(v) => set({ harga: v })}
+                    placeholder="150000"
+                  />
+                </Field>
+                <Field label="Modal / HPP">
+                  <MoneyInput
+                    value={form.modal || ""}
+                    onChange={(v) => set({ modal: v })}
+                    placeholder="70000"
+                  />
+                </Field>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Stok">
+                  <NumberInput
+                    value={form.stok}
+                    onChange={(v) => set({ stok: v })}
+                    placeholder="100"
+                  />
+                </Field>
+                <Field label="Bahan">
+                  <TextInput
+                    value={form.bahan}
+                    onChange={(v) => set({ bahan: v })}
+                    placeholder="Cotton Combed 30s"
+                  />
+                </Field>
+              </div>
+              <Field label="Ukuran Tersedia" hint="pisah dengan koma">
+                <TextInput
+                  value={form.ukuranText}
+                  onChange={(v) => set({ ukuranText: v })}
+                  placeholder="S, M, L, XL"
+                />
+              </Field>
+              <Field label="Garansi">
+                <TextInput
+                  value={form.garansi}
+                  onChange={(v) => set({ garansi: v })}
+                  placeholder="Garansi tukar 7 hari"
+                />
+              </Field>
+              <Field label="Cara Perawatan">
+                <Textarea
+                  value={form.caraPerawatan}
+                  onChange={(v) => set({ caraPerawatan: v })}
+                  placeholder="Cuci dengan air dingin, jangan pakai pemutih…"
+                  rows={2}
+                />
+              </Field>
+              <Field label="Deskripsi" hint="dipakai CS AI & listing">
+                <Textarea
+                  value={form.deskripsi}
+                  onChange={(v) => set({ deskripsi: v })}
+                  placeholder="Deskripsi produk lengkap…"
+                  rows={3}
+                />
+              </Field>
+
+              {/* FAQ editor */}
+              <div className="mb-4">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    FAQ Produk
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addFaq}
+                    className="text-[11.5px] font-semibold text-accent2 hover:underline"
+                  >
+                    + Tambah
+                  </button>
+                </div>
+                {form.faq.length === 0 && (
+                  <p className="text-[12px] text-muted">
+                    Belum ada FAQ. Tambahkan pertanyaan yang sering ditanya pembeli.
+                  </p>
+                )}
+                <div className="space-y-2.5">
+                  {form.faq.map((q, i) => (
+                    <div key={i} className="rounded-[9px] border border-border bg-surface2 p-2.5">
+                      <div className="mb-1.5 flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-muted">
+                          #{i + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => removeFaq(i)}
+                          className="text-[11px] text-muted hover:text-red"
+                        >
+                          Hapus
+                        </button>
+                      </div>
+                      <input
+                        value={q.question}
+                        onChange={(e) => setFaq(i, { question: e.target.value })}
+                        placeholder="Pertanyaan"
+                        className="mb-1.5 w-full rounded-md border border-border bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+                      />
+                      <textarea
+                        value={q.answer}
+                        onChange={(e) => setFaq(i, { answer: e.target.value })}
+                        placeholder="Jawaban"
+                        rows={2}
+                        className="w-full resize-none rounded-md border border-border bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {!editingId && atLimit && (
             <p className="mb-3 rounded-[9px] border border-yellow/30 bg-yellow/10 px-3 py-2 text-[12px] text-yellow">
@@ -183,11 +375,7 @@ export function ProductsManager({
             disabled={pending || (!editingId && atLimit)}
             className="w-full rounded-[10px] bg-gradient-to-br from-accent to-accent2 px-4 py-3 font-display text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
-            {pending
-              ? "Menyimpan…"
-              : editingId
-                ? "💾 Update Produk"
-                : "💾 Simpan Produk"}
+            {pending ? "Menyimpan…" : editingId ? "💾 Update Produk" : "💾 Simpan Produk"}
           </button>
           {editingId && (
             <button
@@ -199,9 +387,7 @@ export function ProductsManager({
             </button>
           )}
           {status && (
-            <p
-              className={`mt-2.5 text-center text-[12px] ${status.ok ? "text-green" : "text-red"}`}
-            >
+            <p className={`mt-2.5 text-center text-[12px] ${status.ok ? "text-green" : "text-red"}`}>
               {status.msg}
             </p>
           )}
@@ -225,16 +411,9 @@ export function ProductsManager({
                 {products.map((p) => {
                   const { profit, margin } = marginOf(p);
                   const color =
-                    margin >= 20
-                      ? "text-green"
-                      : margin >= 5
-                        ? "text-yellow"
-                        : "text-red";
+                    margin >= 20 ? "text-green" : margin >= 5 ? "text-yellow" : "text-red";
                   return (
-                    <div
-                      key={p.id}
-                      className="border-b border-border py-3.5 last:border-b-0"
-                    >
+                    <div key={p.id} className="border-b border-border py-3.5 last:border-b-0">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="truncate text-[14px] font-semibold">
@@ -242,6 +421,7 @@ export function ProductsManager({
                           </p>
                           <p className="mt-0.5 text-[12px] text-muted">
                             {fmt(p.harga)} · modal {fmt(p.modal)} · {p.kategori}
+                            {p.stok != null && ` · stok ${p.stok}`}
                           </p>
                         </div>
                         <div className="shrink-0 text-right">
@@ -254,6 +434,7 @@ export function ProductsManager({
                       <div className="mt-2.5 flex flex-wrap gap-1.5">
                         <QuickLink href={`/dashboard/profit?product=${p.id}`} label="🧮 Cek Profit" />
                         <QuickLink href={`/dashboard/promo?product=${p.id}`} label="🔥 Simulasi Promo" />
+                        <QuickLink href={`/dashboard/products/${p.id}/history`} label="📜 History" />
                         <button
                           type="button"
                           onClick={() => startEdit(p)}

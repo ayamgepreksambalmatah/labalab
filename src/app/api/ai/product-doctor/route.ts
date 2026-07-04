@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     deskripsi?: unknown;
     harga?: unknown;
     kategori?: unknown;
+    review?: unknown;
     image?: { media_type?: unknown; data?: unknown } | null;
   };
   try {
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
   const deskripsi = String(body.deskripsi ?? "").trim().slice(0, 3000);
   const harga = String(body.harga ?? "").trim().slice(0, 30);
   const kategori = String(body.kategori ?? "lainnya").trim().slice(0, 50);
+  const review = String(body.review ?? "").trim().slice(0, 5000);
 
   const mediaType = body.image?.media_type as string | undefined;
   const imageData = body.image?.data as string | undefined;
@@ -88,7 +90,14 @@ export async function POST(req: NextRequest) {
   }
   content.push({
     type: "text",
-    text: buildDoctorPrompt({ judul, deskripsi, harga, kategori, hasPhoto }),
+    text: buildDoctorPrompt({
+      judul,
+      deskripsi,
+      harga,
+      kategori,
+      hasPhoto,
+      review: review || undefined,
+    }),
   });
 
   let ai: DoctorAiResult;

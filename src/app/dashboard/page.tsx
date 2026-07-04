@@ -3,6 +3,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolvePlan } from "@/lib/plans";
+import { getCompilation } from "@/lib/products/dashboard";
+import { fmt } from "@/lib/format";
 
 export const metadata: Metadata = {
   title: "Ringkasan",
@@ -67,6 +69,7 @@ export default async function DashboardPage({
   const displayName = profile?.full_name || profile?.email || "Seller";
   const isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
   const { upgrade } = await searchParams;
+  const comp = await getCompilation();
 
   return (
     <div>
@@ -103,7 +106,68 @@ export default async function DashboardPage({
         </span>
       </div>
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      {comp.hasHistory && (
+        <div className="mt-8">
+          <h2 className="mb-3 font-display text-[15px] font-bold">
+            Ringkasan Toko (dari history)
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <StatBox label="Total Produk" value={String(comp.totalProduk)} />
+            <StatBox
+              label="Total Profit"
+              value={fmt(comp.totalProfitAllTime)}
+              color={comp.totalProfitAllTime >= 0 ? "text-green" : "text-red"}
+            />
+            <StatBox
+              label="Margin Rata-rata"
+              value={`${comp.marginRataRata.toFixed(1)}%`}
+            />
+          </div>
+
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-card border border-border bg-surface p-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-green">
+                Produk Terbaik
+              </p>
+              {comp.produkTerbaik.length === 0 ? (
+                <p className="text-[12.5px] text-muted">Belum ada data.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {comp.produkTerbaik.map((p) => (
+                    <li key={p.id}>
+                      <SnapshotRow id={p.id} nama={p.nama} right={fmt(p.profit)} rightColor="text-green" />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="rounded-card border border-border bg-surface p-4">
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-red">
+                Perlu Perhatian (margin &lt; 10%)
+              </p>
+              {comp.produkBermasalah.length === 0 ? (
+                <p className="text-[12.5px] text-muted">Tidak ada 🎉</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {comp.produkBermasalah.map((p) => (
+                    <li key={p.id}>
+                      <SnapshotRow
+                        id={p.id}
+                        nama={p.nama}
+                        right={`${p.margin.toFixed(1)}%`}
+                        rightColor="text-red"
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <h2 className="mt-8 mb-3 font-display text-[15px] font-bold">Tools</h2>
+      <div className="grid gap-3 sm:grid-cols-2">
         {TOOLS.map((tool) =>
           tool.ready ? (
             <Link
@@ -141,5 +205,48 @@ export default async function DashboardPage({
         )}
       </div>
     </div>
+  );
+}
+
+function StatBox({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string;
+  color?: string;
+}) {
+  return (
+    <div className="rounded-card border border-border bg-surface p-4 text-center">
+      <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted">
+        {label}
+      </p>
+      <p className={`mt-1.5 font-display text-[18px] font-extrabold ${color ?? ""}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SnapshotRow({
+  id,
+  nama,
+  right,
+  rightColor,
+}: {
+  id: string;
+  nama: string;
+  right: string;
+  rightColor: string;
+}) {
+  return (
+    <Link
+      href={`/dashboard/products/${id}/history`}
+      className="flex items-center justify-between gap-2 text-[13px] hover:text-accent2"
+    >
+      <span className="min-w-0 truncate">{nama}</span>
+      <span className={`shrink-0 font-display font-bold ${rightColor}`}>{right}</span>
+    </Link>
   );
 }

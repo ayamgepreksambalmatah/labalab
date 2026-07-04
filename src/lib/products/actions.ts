@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { PLAN_LIMITS, resolvePlan } from "@/lib/plans";
 import type { Platform } from "@/types/database";
 import type { Kategori } from "@/lib/calc/profit";
+import type { FaqItem } from "@/lib/products/queries";
 
 export type ProductInput = {
   nama: string;
@@ -12,7 +13,30 @@ export type ProductInput = {
   kategori: Kategori;
   harga: number;
   modal: number;
+  // Detail lengkap (opsional — hanya diikutkan kalau di-set)
+  detail?: {
+    stok: number | null;
+    ukuran_tersedia: string[] | null;
+    faq: FaqItem[] | null;
+    garansi: string | null;
+    cara_perawatan: string | null;
+    bahan: string | null;
+    deskripsi: string | null;
+  };
 };
+
+/** Bangun payload dasar + detail (kalau ada). */
+function buildPayload(input: ProductInput) {
+  const base = {
+    nama: input.nama.trim(),
+    platform: input.platform,
+    kategori: input.kategori,
+    harga: input.harga,
+    modal: input.modal,
+  };
+  if (!input.detail) return base;
+  return { ...base, ...input.detail };
+}
 
 export type ActionResult =
   | { ok: true }
@@ -68,13 +92,7 @@ export async function saveProduct(input: ProductInput): Promise<ActionResult> {
     .ilike("nama", nama)
     .maybeSingle();
 
-  const payload = {
-    nama,
-    platform: input.platform,
-    kategori: input.kategori,
-    harga: input.harga,
-    modal: input.modal,
-  };
+  const payload = buildPayload(input);
 
   if (existing) {
     const { error } = await supabase
@@ -122,13 +140,7 @@ export async function updateProduct(
 
   const { error } = await ctx.supabase
     .from("products")
-    .update({
-      nama: input.nama.trim(),
-      platform: input.platform,
-      kategori: input.kategori,
-      harga: input.harga,
-      modal: input.modal,
-    })
+    .update(buildPayload(input))
     .eq("id", id);
   if (error) return { ok: false, error: "Gagal memperbarui produk." };
 

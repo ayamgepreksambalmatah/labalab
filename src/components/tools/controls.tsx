@@ -73,6 +73,28 @@ export function TextInput({
   );
 }
 
+export function Textarea({
+  value,
+  onChange,
+  placeholder,
+  rows = 3,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  return (
+    <textarea
+      value={value}
+      rows={rows}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      className={`${inputBase} resize-none px-3.5 py-2.5`}
+    />
+  );
+}
+
 export function NumberInput({
   value,
   onChange,

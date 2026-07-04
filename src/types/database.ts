@@ -52,6 +52,13 @@ export interface Database {
           kategori: string;
           harga: number;
           modal: number;
+          stok: number | null;
+          ukuran_tersedia: string[] | null;
+          faq: Json | null;
+          garansi: string | null;
+          cara_perawatan: string | null;
+          bahan: string | null;
+          deskripsi: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -63,6 +70,13 @@ export interface Database {
           kategori: string;
           harga?: number;
           modal?: number;
+          stok?: number | null;
+          ukuran_tersedia?: string[] | null;
+          faq?: Json | null;
+          garansi?: string | null;
+          cara_perawatan?: string | null;
+          bahan?: string | null;
+          deskripsi?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -150,6 +164,62 @@ export interface Database {
         };
         Update: Partial<
           Database["public"]["Tables"]["product_audits"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      product_sales_history: {
+        Row: {
+          id: string;
+          product_id: string;
+          sales_report_id: string;
+          periode_label: string | null;
+          unit_terjual: number;
+          omzet: number;
+          biaya: number;
+          modal: number;
+          profit: number;
+          margin: number;
+          refund_count: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          sales_report_id: string;
+          periode_label?: string | null;
+          unit_terjual?: number;
+          omzet?: number;
+          biaya?: number;
+          modal?: number;
+          profit?: number;
+          margin?: number;
+          refund_count?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["product_sales_history"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      product_chat_stats: {
+        Row: {
+          id: string;
+          product_id: string;
+          periode: string;
+          jumlah_chat: number | null;
+          jumlah_checkout_setelah_chat: number | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          product_id: string;
+          periode: string;
+          jumlah_chat?: number | null;
+          jumlah_checkout_setelah_chat?: number | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["product_chat_stats"]["Insert"]
         >;
         Relationships: [];
       };

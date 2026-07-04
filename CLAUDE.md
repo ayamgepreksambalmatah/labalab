@@ -70,6 +70,21 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
      supaya konsisten. Supabase redirect URLs & Midtrans notif URL produksi
      perlu diarahkan ke domain produksi.
 
+## Spec lanjutan (labalab-spec-lanjutan.md) — prioritas 1-5 selesai
+1. ✅ Field lengkap Produk Saya (stok, ukuran, faq, garansi, bahan, deskripsi) —
+   `0004_product_knowledge.sql`; form 2 tab (Info Dasar / Detail Lengkap)
+2. ✅ Tabel detail Sales Analyzer — `SalesDetailTable.tsx` (sortable + search +
+   simpan per baris, semua kolom a.enriched)
+3. ✅ Product Doctor + paste review — field review + `analisisReview` di prompt/schema
+4. ✅ History per produk — `0005_product_history.sql` (+ placeholder product_chat_stats).
+   Auto-link EXACT match nama saat Sales Analyzer (fuzzy sengaja tidak auto-link).
+   View: `/dashboard/products/[id]/history` (chart tren + tabel + insight)
+5. ✅ Dashboard kompilasi — `src/lib/products/dashboard.ts`, section di `/dashboard`
+   (total profit all-time, margin rata2, produk terbaik/bermasalah)
+- ⬜ Ditunda: extension Connector (§6, butuh inspeksi DOM Shopee — codebase terpisah),
+  insight chat-vs-checkout (§4.3, sumber data belum pasti; tabel placeholder sudah ada)
+- Migration baru WAJIB dijalankan: `0004_product_knowledge.sql`, `0005_product_history.sql`
+
 ## Commands
 - `npm run dev` — dev server
 - `npm run build` — production build (jalankan sebelum anggap selesai)

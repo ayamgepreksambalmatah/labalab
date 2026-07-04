@@ -6,6 +6,7 @@ import { DEMO_SALES_PRODUCTS, type SalesAnalysis, type SalesProduct } from "@/li
 import { parseSalesFile } from "@/lib/parse/salesFile";
 import type { SalesAiResult } from "@/lib/ai/prompts";
 import { Card } from "@/components/tools/controls";
+import { SalesDetailTable } from "@/components/tools/SalesDetailTable";
 
 type View = "upload" | "loading" | "result" | "error";
 
@@ -134,37 +135,8 @@ export function SalesAnalyzer() {
           </ul>
         </Card>
 
-        <Card title="Detail Produk" icon="📦">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-[12.5px]">
-              <thead>
-                <tr className="border-b border-border text-left text-muted">
-                  <th className="py-2 pr-3 font-semibold">Produk</th>
-                  <th className="py-2 px-3 text-right font-semibold">Omzet</th>
-                  <th className="py-2 px-3 text-right font-semibold">Margin</th>
-                  <th className="py-2 pl-3 text-right font-semibold">Profit Hilang</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analysis.enriched.map((p, i) => (
-                  <tr key={i} className="border-b border-border/60 last:border-b-0">
-                    <td className="py-2 pr-3">{p.name}</td>
-                    <td className="py-2 px-3 text-right">{fmt(p.omzet)}</td>
-                    <td
-                      className={`py-2 px-3 text-right font-semibold ${
-                        p.margin >= 20 ? "text-green" : p.margin >= 5 ? "text-yellow" : "text-red"
-                      }`}
-                    >
-                      {p.margin.toFixed(1)}%
-                    </td>
-                    <td className="py-2 pl-3 text-right text-red">
-                      {p.lostProfit > 0 ? fmt(p.lostProfit) : "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <Card title="Detail Semua Produk" icon="📦">
+          <SalesDetailTable products={analysis.enriched} />
         </Card>
 
         <button

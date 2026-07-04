@@ -15,6 +15,8 @@ export function ProductDoctor() {
   const [deskripsi, setDeskripsi] = useState("");
   const [harga, setHarga] = useState(0);
   const [kategori, setKategori] = useState<string>("fashion");
+  const [review, setReview] = useState("");
+  const [reviewed, setReviewed] = useState(false);
   const [photo, setPhoto] = useState<Photo | null>(null);
 
   const [loading, setLoading] = useState(false);
@@ -47,6 +49,7 @@ export function ProductDoctor() {
     }
     setLoading(true);
     setResult(null);
+    setReviewed(!!review.trim());
     try {
       const res = await fetch("/api/ai/product-doctor", {
         method: "POST",
@@ -56,6 +59,7 @@ export function ProductDoctor() {
           deskripsi,
           harga: harga ? String(harga) : "",
           kategori,
+          review,
           image: photo ? { media_type: photo.mediaType, data: photo.base64 } : null,
         }),
       });
@@ -129,6 +133,15 @@ export function ProductDoctor() {
             <SelectInput value={kategori} onChange={setKategori} options={KATEGORI_OPTIONS} />
           </Field>
         </div>
+        <Field label="Paste Review Pembeli (opsional)">
+          <textarea
+            value={review}
+            onChange={(e) => setReview(e.target.value)}
+            rows={3}
+            placeholder="Copy-paste review dari Shopee/Tokopedia — satu review per baris atau dipisah apa saja, AI akan otomatis pisahkan…"
+            className={`${inputCls} resize-none`}
+          />
+        </Field>
 
         {error && (
           <p className="mb-3 rounded-[9px] border border-red/40 bg-red/10 px-3 py-2 text-[13px] text-red">
@@ -243,6 +256,14 @@ export function ProductDoctor() {
                 ))}
               </ul>
             </Card>
+
+            {reviewed && result.analisisReview && (
+              <Card title="Analisis Review" icon="🗣️">
+                <p className="whitespace-pre-wrap text-[13.5px] leading-relaxed text-text/90">
+                  {result.analisisReview}
+                </p>
+              </Card>
+            )}
           </>
         )}
       </div>

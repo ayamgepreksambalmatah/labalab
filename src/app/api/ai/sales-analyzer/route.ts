@@ -87,17 +87,57 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Simpan histori (juga jadi basis penghitung limit bulanan).
-  await supabase.from("sales_reports").insert({
-    user_id: user.id,
-    source_label: sourceLabel,
-    total_omzet: analysis.totalOmzet,
-    total_profit: analysis.totalProfit,
-    total_margin: analysis.totalMargin,
-    total_lost_profit: analysis.totalLostProfit,
-    ai_summary: ai,
-    raw_products: products,
-  });
+  // Simpan histori laporan (juga jadi basis penghitung limit bulanan).
+  const { data: report } = await supabase
+    .from("sales_reports")
+    .insert({
+      user_id: user.id,
+      source_label: sourceLabel,
+      total_omzet: analysis.totalOmzet,
+      total_profit: analysis.totalProfit,
+      total_margin: analysis.totalMargin,
+      total_lost_profit: analysis.totalLostProfit,
+      ai_summary: ai,
+      raw_products: products,
+    })
+    .select("id")
+    .single();
 
-  return NextResponse.json({ analysis, ai });
+  // Auto-link history per produk untuk yang COCOK PERSIS (case-insensitive)
+  // dengan Produk Saya. Fuzzy match sengaja tidak auto-link agar tidak salah
+  // attribusi — user cukup "Simpan ke Produk Saya", upload berikutnya nyambung.
+  let linkedHistory = 0;
+  if (report) {
+    const { data: myProducts } = await supabase
+      .from("products")
+      .select("id, nama");
+    const byName = new Map(
+      (myProducts ?? []).map((p) => [p.nama.trim().toLowerCase(), p.id]),
+    );
+    const rows = analysis.enriched
+      .map((p) => {
+        const pid = byName.get(p.name.trim().toLowerCase());
+        if (!pid) return null;
+        return {
+          product_id: pid,
+          sales_report_id: report.id,
+          periode_label: sourceLabel,
+          unit_terjual: Math.round(p.unit),
+          omzet: p.omzet,
+          biaya: p.biaya,
+          modal: p.modal,
+          profit: p.profit,
+          margin: p.margin,
+          refund_count: Math.round(p.refund),
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+
+    if (rows.length) {
+      await supabase.from("product_sales_history").insert(rows);
+      linkedHistory = rows.length;
+    }
+  }
+
+  return NextResponse.json({ analysis, ai, linkedHistory });
 }

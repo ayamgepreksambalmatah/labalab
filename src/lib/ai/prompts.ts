@@ -70,6 +70,7 @@ export type DoctorAiResult = {
   judulBaru: string;
   deskripsiBaru: string;
   ideFoto: string[];
+  analisisReview: string;
 };
 
 export const DOCTOR_AI_SCHEMA = {
@@ -99,8 +100,20 @@ export const DOCTOR_AI_SCHEMA = {
       description: "2-3 saran konkret untuk foto produk, spesifik untuk kategori ini.",
       items: { type: "string" },
     },
+    analisisReview: {
+      type: "string",
+      description:
+        "Kalau ADA review pembeli: identifikasi 2-3 pola keluhan/pujian utama, sebutkan perkiraan persentase kalau memungkinkan. Kalau TIDAK ada review: tulis persis 'Tidak ada review untuk dianalisis.'",
+    },
   },
-  required: ["skor", "masalah", "judulBaru", "deskripsiBaru", "ideFoto"],
+  required: [
+    "skor",
+    "masalah",
+    "judulBaru",
+    "deskripsiBaru",
+    "ideFoto",
+    "analisisReview",
+  ],
 } as const;
 
 export function buildDoctorPrompt(input: {
@@ -109,6 +122,7 @@ export function buildDoctorPrompt(input: {
   harga: string;
   kategori: string;
   hasPhoto: boolean;
+  review?: string;
 }): string {
   return `Kamu adalah expert listing optimization untuk marketplace Indonesia (Shopee/Tokopedia).
 
@@ -118,6 +132,7 @@ Audit listing produk ini:
 - Harga: ${input.harga ? "Rp " + input.harga : "(tidak diisi)"}
 - Kategori: ${input.kategori}
 ${input.hasPhoto ? "- Foto produk utama terlampir, ikut nilai kualitas fotonya juga." : "- Tidak ada foto dilampirkan."}
+${input.review ? `\nReview dari pembeli (analisis juga ini untuk masukan perbaikan):\n${input.review}` : ""}
 
-Bahasa Indonesia, to the point, seperti expert yang review portofolio. Isi field "skor" (0-100), "masalah" (3-5 item), "judulBaru", "deskripsiBaru", dan "ideFoto" (2-3 item) sesuai skema.`;
+Bahasa Indonesia, to the point, seperti expert yang review portofolio. Isi field "skor" (0-100), "masalah" (3-5 item), "judulBaru", "deskripsiBaru", "ideFoto" (2-3 item), dan "analisisReview" sesuai skema.`;
 }
