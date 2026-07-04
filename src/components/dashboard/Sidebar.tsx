@@ -24,9 +24,9 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     title: "Tools",
     items: [
       { href: "/dashboard/profit", icon: "🧮", label: "Cek Untung Asli", ready: true },
-      { href: "/dashboard/analyzer", icon: "📊", label: "Sales Analyzer", ready: false },
+      { href: "/dashboard/analyzer", icon: "📊", label: "Sales Analyzer", ready: true },
       { href: "/dashboard/promo", icon: "🔥", label: "Promo Simulator", ready: true },
-      { href: "/dashboard/doctor", icon: "🩺", label: "Product Doctor", ready: false },
+      { href: "/dashboard/doctor", icon: "🩺", label: "Product Doctor", ready: true },
     ],
   },
 ];

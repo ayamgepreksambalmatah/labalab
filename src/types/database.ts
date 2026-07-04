@@ -129,6 +129,30 @@ export interface Database {
         >;
         Relationships: [];
       };
+      product_audits: {
+        Row: {
+          id: string;
+          user_id: string;
+          judul: string | null;
+          kategori: string | null;
+          score: number | null;
+          ai_result: Json | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          judul?: string | null;
+          kategori?: string | null;
+          score?: number | null;
+          ai_result?: Json | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["product_audits"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: Record<never, never>;

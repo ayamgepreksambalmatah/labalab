@@ -49,7 +49,13 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
    - UI: `src/components/products/ProductsManager.tsx`, rute `/dashboard/products`
    - Selektor "Pilih dari Produk Saya" (`ProductPicker`) + prefill `?product=<id>`
      di Profit & Promo; tombol "Simpan ke Produk Saya" di Profit Checker aktif
-5. ⬜ Sales Analyzer & Product Doctor (API route + Anthropic)
+5. ✅ Sales Analyzer & Product Doctor (API route + Anthropic)  ← Tahap 5 selesai
+   - AI infra: `src/lib/ai/*` (client server-only, config model, limits bulanan,
+     prompts+JSON schema). Model: `claude-opus-4-8` + structured outputs.
+   - Routes: `/api/ai/sales-analyzer`, `/api/ai/product-doctor` (auth + limit 402)
+   - Logika: `src/lib/calc/sales.ts`, parser `src/lib/parse/salesFile.ts` (client)
+   - UI: `SalesAnalyzer.tsx`, `ProductDoctor.tsx` (vision foto), rute analyzer/doctor
+   - Tabel baru: `supabase/migrations/0003_product_audits.sql` (WAJIB dijalankan)
 6. ⬜ Midtrans payment
 7. ⬜ Deploy Vercel + domain
 

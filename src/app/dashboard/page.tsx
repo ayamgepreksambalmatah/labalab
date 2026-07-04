@@ -35,14 +35,14 @@ const TOOLS = [
     icon: "📊",
     title: "Sales Analyzer",
     desc: "Upload laporan penjualan, temukan profit hilang.",
-    ready: false,
+    ready: true,
   },
   {
     href: "/dashboard/doctor",
     icon: "🩺",
     title: "Product Doctor",
     desc: "Audit listing produk pakai AI.",
-    ready: false,
+    ready: true,
   },
 ];
 
