@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { Product } from "@/lib/products/queries";
 import { fmt } from "@/lib/format";
 import { computePromo, type PromoVerdictKind } from "@/lib/calc/promo";
 import {
@@ -10,6 +11,7 @@ import {
   NumberInput,
   SliderRow,
 } from "@/components/tools/controls";
+import { ProductPicker } from "@/components/tools/ProductPicker";
 
 const VERDICT_COLOR: Record<PromoVerdictKind, string> = {
   jangan: "text-red",
@@ -17,15 +19,29 @@ const VERDICT_COLOR: Record<PromoVerdictKind, string> = {
   pertimbangkan: "text-yellow",
 };
 
-export function PromoSimulator() {
-  const [hargaNormal, setHargaNormal] = useState(150000);
-  const [modal, setModal] = useState(70000);
+export function PromoSimulator({
+  products = [],
+  initialProduct = null,
+}: {
+  products?: Product[];
+  initialProduct?: Product | null;
+}) {
+  const [picked, setPicked] = useState(initialProduct?.id ?? "");
+  const [hargaNormal, setHargaNormal] = useState(initialProduct?.harga ?? 150000);
+  const [modal, setModal] = useState(initialProduct?.modal ?? 70000);
   const [komisiPct, setKomisiPct] = useState(8);
   const [orderNormal, setOrderNormal] = useState(80);
   const [diskonPct, setDiskonPct] = useState(20);
   const [voucher, setVoucher] = useState(5000);
   const [ongkirBiaya, setOngkirBiaya] = useState(8000);
   const [lonjakanPct, setLonjakanPct] = useState(150);
+
+  function loadFromProduct(p: Product | null) {
+    setPicked(p?.id ?? "");
+    if (!p) return;
+    setHargaNormal(p.harga);
+    setModal(p.modal);
+  }
 
   const r = useMemo(
     () =>
@@ -46,6 +62,7 @@ export function PromoSimulator() {
     <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
       {/* FORM */}
       <Card title="Setup Skenario" icon="🎯">
+        <ProductPicker products={products} value={picked} onPick={loadFromProduct} />
         <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-muted">
           Harga & Modal Normal
         </p>

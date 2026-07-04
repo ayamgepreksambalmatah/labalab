@@ -43,7 +43,12 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
    - UI: `src/components/tools/*`, kontrol bersama `controls.tsx`
    - Shell dashboard: `src/app/dashboard/layout.tsx` + `src/components/dashboard/Sidebar.tsx`
    - Rute: `/dashboard/profit`, `/dashboard/promo`; SEO: OG image, robots, sitemap
-4. ⬜ Produk Saya (ganti window.storage → Supabase)
+4. ✅ Produk Saya (Supabase CRUD)  ← Tahap 4 selesai
+   - Query: `src/lib/products/queries.ts`; actions: `src/lib/products/actions.ts`
+     (saveProduct/updateProduct/deleteProduct + enforce limit plan free=3)
+   - UI: `src/components/products/ProductsManager.tsx`, rute `/dashboard/products`
+   - Selektor "Pilih dari Produk Saya" (`ProductPicker`) + prefill `?product=<id>`
+     di Profit & Promo; tombol "Simpan ke Produk Saya" di Profit Checker aktif
 5. ⬜ Sales Analyzer & Product Doctor (API route + Anthropic)
 6. ⬜ Midtrans payment
 7. ⬜ Deploy Vercel + domain

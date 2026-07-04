@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
 import { ProfitChecker } from "@/components/tools/ProfitChecker";
+import { getProducts } from "@/lib/products/queries";
 
 export const metadata: Metadata = {
   title: "Cek Untung Asli",
   robots: { index: false, follow: false },
 };
 
-export default function ProfitPage() {
+export default async function ProfitPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ product?: string }>;
+}) {
+  const { product: productId } = await searchParams;
+  const products = await getProducts();
+  const initialProduct = productId
+    ? (products.find((p) => p.id === productId) ?? null)
+    : null;
+
   return (
     <div>
       <header className="mb-6">
@@ -17,7 +28,7 @@ export default function ProfitPage() {
           Hitung margin bersih sebenarnya setelah semua potongan marketplace.
         </p>
       </header>
-      <ProfitChecker />
+      <ProfitChecker products={products} initialProduct={initialProduct} />
     </div>
   );
 }

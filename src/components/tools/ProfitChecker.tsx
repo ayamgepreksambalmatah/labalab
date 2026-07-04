@@ -1,8 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { Platform } from "@/types/database";
+import type { Product } from "@/lib/products/queries";
 import { fmt } from "@/lib/format";
+import { saveProduct } from "@/lib/products/actions";
 import {
   computeProfit,
   COMMISSION_RATES,
@@ -19,6 +22,7 @@ import {
   SliderRow,
   TextInput,
 } from "@/components/tools/controls";
+import { ProductPicker } from "@/components/tools/ProductPicker";
 
 const VERDICT_STYLE: Record<VerdictClass, string> = {
   bagus: "border-green/40 bg-green/10 text-green",
@@ -33,14 +37,29 @@ const PLATFORM_HINT: Record<Platform, string> = {
   tiktok: "(Estimasi fee platform TikTok)",
 };
 
-export function ProfitChecker() {
-  const [nama, setNama] = useState("");
-  const [platform, setPlatform] = useState<Platform>("shopee");
-  const [kategori, setKategori] = useState<Kategori>("fashion");
-  const [harga, setHarga] = useState(150000);
-  const [modal, setModal] = useState(70000);
+export function ProfitChecker({
+  products = [],
+  initialProduct = null,
+}: {
+  products?: Product[];
+  initialProduct?: Product | null;
+}) {
+  const router = useRouter();
+  const [saving, startSaving] = useTransition();
+  const [saveMsg, setSaveMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+  const [picked, setPicked] = useState(initialProduct?.id ?? "");
+  const [nama, setNama] = useState(initialProduct?.nama ?? "");
+  const [platform, setPlatform] = useState<Platform>(initialProduct?.platform ?? "shopee");
+  const [kategori, setKategori] = useState<Kategori>(initialProduct?.kategori ?? "fashion");
+  const [harga, setHarga] = useState(initialProduct?.harga ?? 150000);
+  const [modal, setModal] = useState(initialProduct?.modal ?? 70000);
   const [packaging, setPackaging] = useState(3000);
-  const [commPct, setCommPct] = useState(COMMISSION_RATES.shopee.fashion);
+  const [commPct, setCommPct] = useState(
+    initialProduct
+      ? COMMISSION_RATES[initialProduct.platform][initialProduct.kategori]
+      : COMMISSION_RATES.shopee.fashion,
+  );
   const [adsPct, setAdsPct] = useState(5);
   const [ongkirPct, setOngkirPct] = useState(4);
 
@@ -52,6 +71,34 @@ export function ProfitChecker() {
   function pickKategori(k: Kategori) {
     setKategori(k);
     setCommPct(COMMISSION_RATES[platform][k]);
+  }
+
+  function loadFromProduct(p: Product | null) {
+    setPicked(p?.id ?? "");
+    if (!p) return;
+    setNama(p.nama);
+    setPlatform(p.platform);
+    setKategori(p.kategori);
+    setHarga(p.harga);
+    setModal(p.modal);
+    setCommPct(COMMISSION_RATES[p.platform][p.kategori]);
+  }
+
+  function handleSave() {
+    setSaveMsg(null);
+    if (!nama.trim()) {
+      setSaveMsg({ text: "Isi dulu Nama Produk untuk menyimpan.", ok: false });
+      return;
+    }
+    startSaving(async () => {
+      const res = await saveProduct({ nama, platform, kategori, harga, modal });
+      setSaveMsg(
+        res.ok
+          ? { text: `✓ "${nama.trim()}" tersimpan ke Produk Saya`, ok: true }
+          : { text: res.error, ok: false },
+      );
+      if (res.ok) router.refresh();
+    });
   }
 
   const r = useMemo(
@@ -70,6 +117,7 @@ export function ProfitChecker() {
     <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
       {/* FORM */}
       <Card title="Info Produk" icon="🏪">
+        <ProductPicker products={products} value={picked} onPick={loadFromProduct} />
         <Field label="Nama Produk">
           <TextInput value={nama} onChange={setNama} placeholder="Contoh: Kaos Oversize Hitam" />
         </Field>
@@ -119,12 +167,17 @@ export function ProfitChecker() {
           <div className="mt-4">
             <button
               type="button"
-              disabled
-              title="Hadir bersama fitur Produk Saya"
-              className="cursor-not-allowed rounded-lg border border-border px-4 py-1.5 text-[12px] font-semibold text-muted"
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-lg border border-border bg-surface2 px-4 py-1.5 text-[12px] font-semibold text-text hover:bg-surface3 transition-colors disabled:opacity-50"
             >
-              💾 Simpan ke Produk Saya (segera)
+              {saving ? "Menyimpan…" : "💾 Simpan ke Produk Saya"}
             </button>
+            {saveMsg && (
+              <p className={`mt-2 text-[12px] ${saveMsg.ok ? "text-green" : "text-red"}`}>
+                {saveMsg.text}
+              </p>
+            )}
           </div>
         </div>
 

@@ -28,7 +28,7 @@ const TOOLS = [
     icon: "📦",
     title: "Produk Saya",
     desc: "Simpan produk & pakai ulang di semua tools.",
-    ready: false,
+    ready: true,
   },
   {
     href: "/dashboard/analyzer",
