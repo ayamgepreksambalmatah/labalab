@@ -24,3 +24,17 @@ export const PRO_PERIOD_DAYS = 30;
 export function limitsFor(plan: Plan) {
   return PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 }
+
+/**
+ * Plan efektif: 'pro' hanya berlaku kalau belum kedaluwarsa. Kalau
+ * plan_expires_at sudah lewat, otomatis dianggap 'free' — jadi tidak perlu
+ * job downgrade terpisah untuk enforcement limit.
+ */
+export function resolvePlan(
+  plan: Plan | null | undefined,
+  planExpiresAt: string | null | undefined,
+): Plan {
+  if (plan !== "pro") return "free";
+  if (!planExpiresAt) return "pro";
+  return new Date(planExpiresAt).getTime() > Date.now() ? "pro" : "free";
+}

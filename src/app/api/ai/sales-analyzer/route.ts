@@ -3,14 +3,13 @@ import { createServerClient } from "@/lib/supabase/server";
 import { checkMonthlyLimit } from "@/lib/ai/limits";
 import { generateJson } from "@/lib/ai/client";
 import { AI_MAX_TOKENS } from "@/lib/ai/config";
+import { resolvePlan } from "@/lib/plans";
 import { computeSalesAnalysis, type SalesProduct } from "@/lib/calc/sales";
 import {
   buildSalesPrompt,
   SALES_AI_SCHEMA,
   type SalesAiResult,
 } from "@/lib/ai/prompts";
-import type { Plan } from "@/types/database";
-
 export const maxDuration = 60;
 
 function sanitizeProducts(raw: unknown): SalesProduct[] {
@@ -39,10 +38,10 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, plan_expires_at")
     .eq("id", user.id)
     .single();
-  const plan = (profile?.plan ?? "free") as Plan;
+  const plan = resolvePlan(profile?.plan, profile?.plan_expires_at);
 
   const limit = await checkMonthlyLimit(supabase, user.id, plan, "salesAnalyzer");
   if (!limit.allowed) {

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
+import { resolvePlan } from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Ringkasan",
@@ -46,7 +47,11 @@ const TOOLS = [
   },
 ];
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ upgrade?: string }>;
+}) {
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -55,15 +60,29 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, email, plan")
+    .select("full_name, email, plan, plan_expires_at")
     .eq("id", user.id)
     .single();
 
   const displayName = profile?.full_name || profile?.email || "Seller";
-  const isPro = profile?.plan === "pro";
+  const isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
+  const { upgrade } = await searchParams;
 
   return (
     <div>
+      {upgrade === "success" && (
+        <div className="mb-6 rounded-card border border-green/40 bg-green/10 px-4 py-3 text-[13px] text-green">
+          {isPro
+            ? "🎉 Pembayaran berhasil — kamu sekarang LabaLab Pro!"
+            : "🎉 Pembayaran diterima! Status Pro sedang diproses, refresh sebentar lagi."}
+        </div>
+      )}
+      {upgrade === "pending" && (
+        <div className="mb-6 rounded-card border border-yellow/40 bg-yellow/10 px-4 py-3 text-[13px] text-yellow">
+          ⏳ Pembayaran kamu sedang menunggu penyelesaian. Status Pro aktif
+          otomatis setelah pembayaran dikonfirmasi.
+        </div>
+      )}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-extrabold tracking-tight">

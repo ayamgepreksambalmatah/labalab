@@ -94,16 +94,28 @@ export function Sidebar({ plan }: { plan: Plan }) {
       </nav>
 
       <div className="mt-auto hidden md:block pt-4">
-        <div className="rounded-xl border border-border bg-surface2 p-3.5">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-accent2">
-            {isPro ? "LabaLab Pro" : "Plan Gratis"}
-          </p>
-          <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
-            {isPro
-              ? "Akses unlimited ke semua tools."
-              : "Upgrade untuk akses unlimited semua tools."}
-          </p>
-        </div>
+        {isPro ? (
+          <div className="rounded-xl border border-green/40 bg-green/10 p-3.5">
+            <p className="text-[11px] font-bold uppercase tracking-wide text-green">
+              LabaLab Pro
+            </p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+              Akses unlimited ke semua tools.
+            </p>
+          </div>
+        ) : (
+          <Link
+            href="/pricing"
+            className="block rounded-xl border border-accent/40 bg-gradient-to-br from-accent/15 to-accent2/5 p-3.5 transition-colors hover:from-accent/25"
+          >
+            <p className="text-[11px] font-bold uppercase tracking-wide text-accent2">
+              Plan Gratis
+            </p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-muted">
+              Upgrade ke Pro untuk akses unlimited →
+            </p>
+          </Link>
+        )}
         <form action={signOut} className="mt-2">
           <button
             type="submit"

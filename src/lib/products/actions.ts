@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createServerClient } from "@/lib/supabase/server";
-import { PLAN_LIMITS } from "@/lib/plans";
-import type { Plan, Platform } from "@/types/database";
+import { PLAN_LIMITS, resolvePlan } from "@/lib/plans";
+import type { Platform } from "@/types/database";
 import type { Kategori } from "@/lib/calc/profit";
 
 export type ProductInput = {
@@ -27,11 +27,15 @@ async function getAuthedContext() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, plan_expires_at")
     .eq("id", user.id)
     .single();
 
-  return { supabase, userId: user.id, plan: (profile?.plan ?? "free") as Plan };
+  return {
+    supabase,
+    userId: user.id,
+    plan: resolvePlan(profile?.plan, profile?.plan_expires_at),
+  };
 }
 
 function validate(input: ProductInput): string | null {

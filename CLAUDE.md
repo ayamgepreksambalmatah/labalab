@@ -56,7 +56,14 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
    - Logika: `src/lib/calc/sales.ts`, parser `src/lib/parse/salesFile.ts` (client)
    - UI: `SalesAnalyzer.tsx`, `ProductDoctor.tsx` (vision foto), rute analyzer/doctor
    - Tabel baru: `supabase/migrations/0003_product_audits.sql` (WAJIB dijalankan)
-6. ⬜ Midtrans payment
+6. ✅ Midtrans payment  ← Tahap 6 selesai
+   - Client Midtrans server-only: `src/lib/midtrans.ts` (Snap + verifikasi signature sha512)
+   - Routes: `/api/payment/create-transaction` (Snap token), `/api/payment/webhook`
+     (verifikasi signature → set plan='pro' + plan_expires_at +30hr via service role)
+   - Halaman `/pricing` + `UpgradeButton` (Snap popup), banner hasil di dashboard
+   - `resolvePlan(plan, expires)` di `plans.ts` — Pro kedaluwarsa auto jadi free;
+     dipakai di semua enforcement (AI routes, product actions) + display
+   - Proxy: `/api/*` self-auth (tidak di-redirect) — WAJIB agar webhook Midtrans jalan
 7. ⬜ Deploy Vercel + domain
 
 ## Commands

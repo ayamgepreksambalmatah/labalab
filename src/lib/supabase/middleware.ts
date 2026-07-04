@@ -43,7 +43,12 @@ export async function updateSession(request: NextRequest) {
     (p) => pathname === p || pathname.startsWith(`${p}/`),
   );
 
-  if (!user && !isPublic) {
+  // API route self-authenticate (kembalikan 401/JSON sendiri) — jangan
+  // di-redirect ke /login. Penting untuk webhook Midtrans yang dipanggil
+  // tanpa sesi user.
+  const isApi = pathname.startsWith("/api");
+
+  if (!user && !isPublic && !isApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

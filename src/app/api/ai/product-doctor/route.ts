@@ -9,7 +9,7 @@ import {
   DOCTOR_AI_SCHEMA,
   type DoctorAiResult,
 } from "@/lib/ai/prompts";
-import type { Plan } from "@/types/database";
+import { resolvePlan } from "@/lib/plans";
 
 export const maxDuration = 60;
 
@@ -27,10 +27,10 @@ export async function POST(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, plan_expires_at")
     .eq("id", user.id)
     .single();
-  const plan = (profile?.plan ?? "free") as Plan;
+  const plan = resolvePlan(profile?.plan, profile?.plan_expires_at);
 
   const limit = await checkMonthlyLimit(supabase, user.id, plan, "productDoctor");
   if (!limit.allowed) {
