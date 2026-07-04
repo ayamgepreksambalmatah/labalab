@@ -12,13 +12,12 @@ export const metadata: Metadata = {
 
 export default async function ProductsPage() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login");
 
   const [{ data: profile }, products] = await Promise.all([
-    supabase.from("profiles").select("plan").eq("id", user.id).single(),
+    supabase.from("profiles").select("plan").eq("id", userId).single(),
     getProducts(),
   ]);
 

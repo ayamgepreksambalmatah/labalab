@@ -31,10 +31,14 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // IMPORTANT: do not run code between createServerClient and getUser().
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // IMPORTANT: jangan jalankan kode di antara createServerClient dan panggilan
+  // auth. getClaims() memverifikasi tanda tangan JWT SECARA LOKAL (project ini
+  // pakai asymmetric signing key ES256) — tidak ada network call per navigasi,
+  // beda dengan getUser() yang selalu call server (~300ms). Refresh token tetap
+  // otomatis: getClaims membaca sesi dari cookie dan me-refresh (via setAll)
+  // hanya kalau access token sudah kedaluwarsa.
+  const { data } = await supabase.auth.getClaims();
+  const isAuthed = !!data?.claims;
 
   // Routes that do not require authentication.
   const publicPaths = ["/login", "/register", "/auth", "/pricing", "/"];
@@ -48,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   // tanpa sesi user.
   const isApi = pathname.startsWith("/api");
 
-  if (!user && !isPublic && !isApi) {
+  if (!isAuthed && !isPublic && !isApi) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);

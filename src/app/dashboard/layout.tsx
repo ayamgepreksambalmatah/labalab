@@ -9,15 +9,15 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  // getClaims() = verifikasi JWT lokal (cepat), cukup untuk personalisasi & id.
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan, plan_expires_at")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const plan = resolvePlan(profile?.plan, profile?.plan_expires_at);

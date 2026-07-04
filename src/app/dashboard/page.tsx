@@ -55,15 +55,14 @@ export default async function DashboardPage({
   searchParams: Promise<{ upgrade?: string }>;
 }) {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  if (!userId) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, email, plan, plan_expires_at")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   const displayName = profile?.full_name || profile?.email || "Seller";

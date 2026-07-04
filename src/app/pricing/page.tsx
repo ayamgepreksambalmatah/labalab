@@ -29,16 +29,16 @@ const PRO_FEATURES = [
 
 export default async function PricingPage() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  const isLoggedIn = !!userId;
 
   let isPro = false;
-  if (user) {
+  if (userId) {
     const { data: profile } = await supabase
       .from("profiles")
       .select("plan, plan_expires_at")
-      .eq("id", user.id)
+      .eq("id", userId)
       .single();
     isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
   }
@@ -85,7 +85,7 @@ export default async function PricingPage() {
               ))}
             </ul>
             <div className="mt-6">
-              {user ? (
+              {isLoggedIn ? (
                 <Link
                   href="/dashboard"
                   className="block rounded-[10px] border border-border px-4 py-3 text-center text-sm font-semibold text-text hover:bg-surface2"
@@ -124,7 +124,7 @@ export default async function PricingPage() {
               ))}
             </ul>
             <div className="mt-6">
-              <UpgradeButton isLoggedIn={!!user} isPro={isPro} />
+              <UpgradeButton isLoggedIn={isLoggedIn} isPro={isPro} />
             </div>
           </div>
         </div>

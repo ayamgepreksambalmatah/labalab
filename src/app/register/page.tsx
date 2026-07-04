@@ -13,10 +13,8 @@ import { createServerClient } from "@/lib/supabase/server";
 
 export default async function RegisterPage() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  const { data: claims } = await supabase.auth.getClaims();
+  if (claims?.claims) redirect("/dashboard");
 
   return (
     <AuthShell

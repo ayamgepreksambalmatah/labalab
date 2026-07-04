@@ -5,10 +5,8 @@ import { createServerClient } from "@/lib/supabase/server";
 
 export default async function Home() {
   const supabase = await createServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (user) redirect("/dashboard");
+  const { data: claims } = await supabase.auth.getClaims();
+  if (claims?.claims) redirect("/dashboard");
 
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
