@@ -64,7 +64,11 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
    - `resolvePlan(plan, expires)` di `plans.ts` — Pro kedaluwarsa auto jadi free;
      dipakai di semua enforcement (AI routes, product actions) + display
    - Proxy: `/api/*` self-auth (tidak di-redirect) — WAJIB agar webhook Midtrans jalan
-7. ⬜ Deploy Vercel + domain
+7. ✅ Deploy Vercel + domain labalab.id (live, SSL OK)  ← Tahap 7 selesai
+   - Catatan: www.labalab.id jadi primary (apex redirect ke www), tapi
+     canonical/OG pakai apex labalab.id — set apex sebagai primary di Vercel
+     supaya konsisten. Supabase redirect URLs & Midtrans notif URL produksi
+     perlu diarahkan ke domain produksi.
 
 ## Commands
 - `npm run dev` — dev server
