@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LabaLab — AI Profit Assistant untuk Seller</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0d; --surface: #13131a; --surface2: #1c1c26; --surface3: #242433;
+  --border: #2a2a3d; --accent: #7c6ffd; --accent2: #a78bfa;
+  --green: #10d98e; --red: #ff5c5c; --yellow: #fbbf24;
+  --text: #eeeef5; --muted: #7777a0; --radius: 14px;
+}
+body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* APP LAYOUT */
+.app { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+.sidebar {
+  background: var(--surface); border-right: 1px solid var(--border);
+  padding: 20px 16px; display: flex; flex-direction: column; gap: 4px;
+}
+.sidebar-logo { padding: 8px 10px 20px; }
+.logo {
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 21px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.logo-tagline { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+.nav-item {
+  display: flex; align-items: center; gap: 11px; padding: 11px 12px;
+  border-radius: 10px; cursor: pointer; transition: background 0.15s;
+  font-size: 13.5px; font-weight: 600; color: var(--muted);
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: linear-gradient(135deg, #7c6ffd20, #a78bfa10); color: var(--accent2); }
+.nav-icon { font-size: 17px; width: 22px; text-align: center; }
+
+.nav-divider { height: 1px; background: var(--border); margin: 14px 4px; }
+.nav-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px 4px; }
+
+.plan-box {
+  margin-top: auto; padding: 14px; background: var(--surface2);
+  border: 1px solid var(--border); border-radius: 12px;
+}
+.plan-name { font-size: 11px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: 0.5px; }
+.plan-desc { font-size: 11.5px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+
+.content { padding: 32px 36px; overflow-y: auto; max-height: 100vh; }
+.content-header { margin-bottom: 24px; }
+.content-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 4px; }
+.content-sub { font-size: 13.5px; color: var(--muted); }
+
+.tool-view { display: none; }
+.tool-view.active { display: block; }
+
+/* SHARED CARD STYLES */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
+.card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); background: var(--surface2); display: flex; align-items: center; gap: 10px; }
+.card-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: var(--surface3); }
+.card-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13px; }
+.card-body { padding: 20px; }
+
+.two-col { display: grid; grid-template-columns: 400px 1fr; gap: 24px; align-items: start; }
+
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 7px; }
+.input-wrap { position: relative; }
+.prefix { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--muted); font-weight: 500; }
+input[type=number], input[type=text], textarea, select {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 9px;
+  color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; padding: 11px 14px 11px 36px;
+  outline: none; transition: border-color 0.2s; resize: none;
+}
+textarea, select, input.no-prefix { padding-left: 14px; }
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+select option { background: var(--surface2); }
+input::placeholder, textarea::placeholder { color: var(--muted); }
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.slider-row { display: flex; align-items: center; gap: 10px; }
+input[type=range] { flex: 1; -webkit-appearance: none; height: 4px; border-radius: 4px; background: var(--border); outline: none; padding: 0; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; }
+.slider-val { min-width: 42px; font-size: 13px; font-weight: 600; color: var(--accent2); text-align: right; }
+
+.divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+.section-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
+.action-btn {
+  width: 100%; padding: 13px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.action-btn:hover { opacity: 0.88; }
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+.metric-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; text-align: center; }
+.metric-label { font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+.metric-value { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+
+.breakdown-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.breakdown-item:last-child { border-bottom: none; }
+.breakdown-item.total { padding-top: 14px; font-weight: 700; font-size: 14px; }
+.breakdown-label { color: var(--muted); }
+.breakdown-label.dark { color: var(--text); }
+.breakdown-val { font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif; }
+.breakdown-val.negative { color: var(--red); }
+
+.verdict { display: inline-block; padding: 6px 20px; border-radius: 20px; font-size: 13px; font-weight: 700; }
+.verdict.bagus { background: #10d98e20; color: var(--green); border: 1px solid #10d98e40; }
+.verdict.lumayan { background: #fbbf2420; color: var(--yellow); border: 1px solid #fbbf2440; }
+.verdict.bahaya { background: #ff5c5c20; color: var(--red); border: 1px solid #ff5c5c40; }
+.verdict.minus { background: #ff5c5c30; color: var(--red); border: 2px solid var(--red); }
+
+.tips-list { display: flex; flex-direction: column; gap: 10px; }
+.tip-item { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: var(--surface2); border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.tip-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; text-align: center; color: var(--muted); gap: 12px; }
+.empty-icon { font-size: 40px; opacity: 0.3; }
+
+.loading-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 16px; }
+.spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 13px; color: var(--muted); }
+
+.insight-content { font-size: 13.5px; line-height: 1.8; white-space: pre-wrap; }
+.insight-content strong { color: var(--accent2); }
+
+/* UPLOAD ZONE */
+.upload-card { background: var(--surface2); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 36px 24px; text-align: center; cursor: pointer; transition: border-color 0.2s; }
+.upload-card:hover, .upload-card.dragover { border-color: var(--accent); background: #7c6ffd08; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+#fileInput, #photoInput { display: none; }
+.demo-link { display: block; margin-top: 12px; font-size: 12px; color: var(--muted); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: 'Inter', sans-serif; }
+.demo-link:hover { color: var(--accent2); }
+
+.product-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.product-row:last-child { border-bottom: none; }
+.product-info { flex: 1; min-width: 0; }
+.product-name { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.product-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.product-metric { text-align: right; flex-shrink: 0; }
+.product-margin { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 14px; }
+.product-profit { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* SCORE RING */
+.score-ring-wrap { display: flex; align-items: center; gap: 20px; }
+.score-ring { position: relative; width: 90px; height: 90px; flex-shrink: 0; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 800; font-size: 22px; }
+
+.photo-preview { max-width: 100%; max-height: 160px; border-radius: 10px; margin-top: 10px; }
+
+.copy-btn { background: none; border: 1px solid var(--border); border-radius: 6px; color: var(--muted); font-size: 11px; padding: 3px 10px; cursor: pointer; transition: all 0.2s; }
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+.copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+  .sidebar { flex-direction: row; overflow-x: auto; padding: 12px; }
+  .sidebar-logo, .plan-box, .nav-divider, .nav-label { display: none; }
+  .nav-item span:last-child { display: none; }
+  .two-col { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: 1fr; }
+  .content { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">LabaLab</div>
+      <div class="logo-tagline">AI Profit Assistant</div>
+    </div>
+
+    <div class="nav-label">Pusat Toko</div>
+    <div class="nav-item active" data-tool="products" onclick="switchTool('products')">
+      <span class="nav-icon">📦</span><span>Produk Saya</span>
+    </div>
+
+    <div class="nav-label">Tools</div>
+    <div class="nav-item" data-tool="profit" onclick="switchTool('profit')">
+      <span class="nav-icon">🧮</span><span>Cek Untung Asli</span>
+    </div>
+    <div class="nav-item" data-tool="analyzer" onclick="switchTool('analyzer')">
+      <span class="nav-icon">📊</span><span>Sales Analyzer</span>
+    </div>
+    <div class="nav-item" data-tool="promo" onclick="switchTool('promo')">
+      <span class="nav-icon">🔥</span><span>Promo Simulator</span>
+    </div>
+    <div class="nav-item" data-tool="doctor" onclick="switchTool('doctor')">
+      <span class="nav-icon">🩺</span><span>Product Doctor</span>
+    </div>
+
+    <div class="nav-divider"></div>
+    <div class="plan-box">
+      <div class="plan-name">LabaLab Pro</div>
+      <div class="plan-desc">Akses unlimited ke semua tools LabaLab</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ============ TOOL 1: PROFIT CHECKER ============ -->
+    <div class="tool-view" id="view-profit">
+      <div class="content-header">
+        <div class="content-title">🧮 Cek Untung Asli</div>
+        <div class="content-sub">Hitung margin bersih sebenarnya setelah semua potongan marketplace</div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-icon">🏪</div><div class="card-title">Info Produk</div></div>
+          <div class="card-body">
+            <div class="field" id="pf_selectorField" style="display:none">
+              <label>Pilih dari Produk Saya</label>
+              <select id="pf_productSelect" onchange="pfLoadFromProduct()">
+                <option value="">-- Isi manual --</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Nama Produk <span style="text-transform:none;color:var(--muted)">(untuk disimpan nanti)</span></label>
+              <input type="text" id="pf_nama" class="no-prefix" placeholder="Contoh: Kaos Oversize Hitam"/>
+            </div>
+            <div class="field">
+              <label>Platform</label>
+              <select id="pf_platform" onchange="pfUpdateCommission()">
+                <option value="shopee">🟠 Shopee</option>
+                <option value="tokopedia">🟢 Tokopedia</option>
+                <option value="tiktok">🎵 TikTok Shop</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Kategori</label>
+              <select id="pf_category" onchange="pfUpdateCommission()">
+                <option value="fashion">Fashion & Pakaian</option>
+                <option value="elektronik">Elektronik & Gadget</option>
+                <option value="kecantikan">Kecantikan & Skincare</option>
+                <option value="makanan">Makanan & Minuman</option>
+                <option value="rumah">Perabot & Rumah Tangga</option>
+                <option value="olahraga">Olahraga & Outdoor</option>
+                <option value="lainnya">Lainnya</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Harga Jual</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pf_harga" value="150000" oninput="pfCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Modal / HPP</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pf_modal" value="70000" oninput="pfCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Packaging</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pf_packaging" value="3000" oninput="pfCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Komisi Platform <span id="pf_commHint" style="color:var(--accent2)"></span></label>
+              <div class="slider-row">
+                <input type="range" id="pf_commSlider" min="1" max="20" step="0.5" value="10" oninput="pfSync()">
+                <div class="slider-val" id="pf_commVal">10%</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Biaya Iklan (% harga jual)</label>
+              <div class="slider-row">
+                <input type="range" id="pf_adsSlider" min="0" max="20" step="0.5" value="5" oninput="pfSync()">
+                <div class="slider-val" id="pf_adsVal">5%</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Subsidi Gratis Ongkir</label>
+              <div class="slider-row">
+                <input type="range" id="pf_ongkirSlider" min="0" max="15" step="0.5" value="4" oninput="pfSync()">
+                <div class="slider-val" id="pf_ongkirVal">4%</div>
+              </div>
+            </div>
+            <button class="action-btn" onclick="pfCalculate()">⚡ Hitung Untung Asli</button>
+          </div>
+        </div>
+        <div id="pf_result"></div>
+      </div>
+    </div>
+
+    <!-- ============ TOOL 2: SALES ANALYZER ============ -->
+    <div class="tool-view" id="view-analyzer">
+      <div class="content-header">
+        <div class="content-title">📊 AI Sales Report Analyzer</div>
+        <div class="content-sub">Upload laporan penjualan, AI kasih insight produk mana yang untung dan mana yang boncos</div>
+      </div>
+      <div id="sa_main">
+        <div class="upload-card" id="sa_uploadCard" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📊</div>
+          <div class="upload-title">Upload Laporan Penjualan</div>
+          <div class="upload-sub">File Excel/CSV dari Shopee, Tokopedia, atau TikTok Shop Seller Center</div>
+          <button class="action-btn" style="width:auto;padding:10px 22px" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Pilih File</button>
+          <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="saHandleFile(event)"/>
+          <button class="demo-link" onclick="event.stopPropagation(); saRunDemo()">Belum punya file? Coba data contoh →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TOOL 3: PROMO SIMULATOR ============ -->
+    <div class="tool-view" id="view-promo">
+      <div class="content-header">
+        <div class="content-title">🔥 Promo Simulator</div>
+        <div class="content-sub">Cek dulu sebelum ikut flash sale — jangan sampai ramai tapi rugi</div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-icon">🎯</div><div class="card-title">Setup Skenario</div></div>
+          <div class="card-body">
+            <div class="field" id="pr_selectorField" style="display:none">
+              <label>Pilih dari Produk Saya</label>
+              <select id="pr_productSelect" onchange="prLoadFromProduct()">
+                <option value="">-- Isi manual --</option>
+              </select>
+            </div>
+            <div class="section-label">Harga & Modal Normal</div>
+            <div class="field">
+              <label>Harga Jual Normal</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pr_hargaNormal" value="150000" oninput="prCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Modal / HPP</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pr_modal" value="70000" oninput="prCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Komisi Platform</label>
+              <div class="slider-row">
+                <input type="range" id="pr_komisiSlider" min="1" max="15" step="0.5" value="8" oninput="prSync()">
+                <div class="slider-val" id="pr_komisiVal">8%</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Order Normal (per periode)</label>
+              <input type="number" id="pr_orderNormal" value="80" class="no-prefix" oninput="prCalculate()"/>
+            </div>
+            <hr class="divider">
+            <div class="section-label">Detail Promo</div>
+            <div class="field">
+              <label>Diskon Harga Coret</label>
+              <div class="slider-row">
+                <input type="range" id="pr_diskonSlider" min="0" max="60" step="1" value="20" oninput="prSync()">
+                <div class="slider-val" id="pr_diskonVal">20%</div>
+              </div>
+            </div>
+            <div class="field">
+              <label>Voucher Toko</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pr_voucher" value="5000" oninput="prCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Subsidi Gratis Ongkir</label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pr_ongkirBiaya" value="8000" oninput="prCalculate()"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Estimasi Kenaikan Order</label>
+              <div class="slider-row">
+                <input type="range" id="pr_lonjakanSlider" min="0" max="500" step="10" value="150" oninput="prSync()">
+                <div class="slider-val" id="pr_lonjakanVal">150%</div>
+              </div>
+            </div>
+            <button class="action-btn" onclick="prCalculate()">⚡ Simulasikan</button>
+          </div>
+        </div>
+        <div id="pr_result"></div>
+      </div>
+    </div>
+
+    <!-- ============ TOOL 4: PRODUCT DOCTOR ============ -->
+    <div class="tool-view" id="view-doctor">
+      <div class="content-header">
+        <div class="content-title">🩺 AI Product Doctor</div>
+        <div class="content-sub">Audit listing produk kamu — cari tahu kenapa konversinya rendah</div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-icon">📋</div><div class="card-title">Data Listing Kamu</div></div>
+          <div class="card-body">
+            <div class="field" id="pd_selectorField" style="display:none">
+              <label>Pilih dari Produk Saya</label>
+              <select id="pd_productSelect" onchange="pdLoadFromProduct()">
+                <option value="">-- Isi manual --</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Foto Produk Utama <span style="text-transform:none;color:var(--muted)">(opsional)</span></label>
+              <div class="upload-card" style="padding:20px" onclick="document.getElementById('photoInput').click()">
+                <div class="upload-icon" style="font-size:24px;margin-bottom:6px">📷</div>
+                <div class="upload-title" style="font-size:13px">Upload Foto Produk</div>
+                <input type="file" id="photoInput" accept="image/*" onchange="pdHandlePhoto(event)"/>
+              </div>
+              <img id="pd_photoPreview" class="photo-preview" style="display:none"/>
+            </div>
+            <div class="field">
+              <label>Judul Produk Sekarang</label>
+              <input type="text" id="pd_judul" placeholder="Contoh: Kaos Oversize"/>
+            </div>
+            <div class="field">
+              <label>Deskripsi Produk Sekarang</label>
+              <textarea id="pd_deskripsi" rows="4" placeholder="Paste deskripsi produk kamu yang sekarang..."></textarea>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>Harga Jual</label>
+                <div class="input-wrap"><span class="prefix">Rp</span>
+                  <input type="number" id="pd_harga" placeholder="150000"/>
+                </div>
+              </div>
+              <div class="field">
+                <label>Kategori</label>
+                <select id="pd_kategori">
+                  <option value="fashion">Fashion</option>
+                  <option value="elektronik">Elektronik</option>
+                  <option value="kecantikan">Kecantikan</option>
+                  <option value="makanan">Makanan</option>
+                  <option value="rumah">Rumah Tangga</option>
+                  <option value="lainnya">Lainnya</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>Modal / HPP <span style="text-transform:none;color:var(--muted)">(opsional, untuk simpan ke Produk Saya)</span></label>
+              <div class="input-wrap"><span class="prefix">Rp</span>
+                <input type="number" id="pd_modal" placeholder="70000"/>
+              </div>
+            </div>
+            <button class="action-btn" onclick="pdAudit()">🩺 Audit Listing Ini</button>
+          </div>
+        </div>
+        <div id="pd_result">
+          <div class="card">
+            <div class="empty-state">
+              <div class="empty-icon">🩺</div>
+              <p style="font-size:14px">Isi data listing kamu di kiri,<br>AI akan kasih skor dan saran perbaikan</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TOOL 5: PRODUK SAYA (MEMORY) ============ -->
+    <div class="tool-view active" id="view-products">
+      <div class="content-header">
+        <div class="content-title">📦 Produk Saya</div>
+        <div class="content-sub">Pusat kendali toko kamu — semua tools LabaLab ambil dan simpan data dari sini</div>
+      </div>
+
+      <div id="ps_dashboard" style="margin-bottom:20px"></div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-icon">➕</div><div class="card-title" id="ps_formTitle">Tambah Produk</div></div>
+          <div class="card-body">
+            <div class="field">
+              <label>Nama Produk</label>
+              <input type="text" id="ps_nama" placeholder="Contoh: Kaos Oversize Hitam"/>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>Platform</label>
+                <select id="ps_platform">
+                  <option value="shopee">🟠 Shopee</option>
+                  <option value="tokopedia">🟢 Tokopedia</option>
+                  <option value="tiktok">🎵 TikTok Shop</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Kategori</label>
+                <select id="ps_kategori">
+                  <option value="fashion">Fashion</option>
+                  <option value="elektronik">Elektronik</option>
+                  <option value="kecantikan">Kecantikan</option>
+                  <option value="makanan">Makanan</option>
+                  <option value="rumah">Rumah Tangga</option>
+                  <option value="lainnya">Lainnya</option>
+                </select>
+              </div>
+            </div>
+            <div class="row-2">
+              <div class="field">
+                <label>Harga Jual</label>
+                <div class="input-wrap"><span class="prefix">Rp</span>
+                  <input type="number" id="ps_harga" placeholder="150000"/>
+                </div>
+              </div>
+              <div class="field">
+                <label>Modal / HPP</label>
+                <div class="input-wrap"><span class="prefix">Rp</span>
+                  <input type="number" id="ps_modal" placeholder="70000"/>
+                </div>
+              </div>
+            </div>
+            <button class="action-btn" id="ps_submitBtn" onclick="psAddProduct()">💾 Simpan Produk</button>
+            <button class="demo-link" id="ps_cancelEditBtn" style="display:none" onclick="psCancelEdit()">Batal edit</button>
+            <div id="ps_saveStatus" style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:10px"></div>
+          </div>
+        </div>
+        <div id="ps_list">
+          <div class="card"><div class="loading-state"><div class="spinner"></div><div class="loading-text">Memuat produk tersimpan...</div></div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ============================================================
+// NAVIGATION
+// ============================================================
+function switchTool(tool) {
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-tool="${tool}"]`).classList.add('active');
+  document.querySelectorAll('.tool-view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-' + tool).classList.add('active');
+}
+
+function fmt(n) {
+  const sign = n < 0 ? '-' : '';
+  return sign + 'Rp ' + Math.abs(Math.round(n)).toLocaleString('id-ID');
+}
+
+// ============================================================
+// TOOL 1: PROFIT CHECKER
+// ============================================================
+const COMMISSION_RATES = {
+  shopee: { fashion: 10, elektronik: 5.5, kecantikan: 10, makanan: 7, rumah: 8, olahraga: 8, lainnya: 8 },
+  tokopedia: { fashion: 6.97, elektronik: 3.5, kecantikan: 6.97, makanan: 6.97, rumah: 6.97, olahraga: 6.97, lainnya: 6.97 },
+  tiktok: { fashion: 8, elektronik: 5, kecantikan: 8, makanan: 7, rumah: 8, olahraga: 8, lainnya: 8 }
+};
+
+function pfUpdateCommission() {
+  const platform = document.getElementById('pf_platform').value;
+  const cat = document.getElementById('pf_category').value;
+  const rate = COMMISSION_RATES[platform][cat];
+  document.getElementById('pf_commSlider').value = rate;
+  document.getElementById('pf_commVal').textContent = rate + '%';
+  const hints = { shopee: '(Estimasi fee platform Shopee)', tokopedia: '(Estimasi fee platform Tokopedia)', tiktok: '(Estimasi fee platform Tiktok)' };
+  document.getElementById('pf_commHint').textContent = hints[platform];
+  pfCalculate();
+}
+
+function pfSync() {
+  document.getElementById('pf_commVal').textContent = document.getElementById('pf_commSlider').value + '%';
+  document.getElementById('pf_adsVal').textContent = document.getElementById('pf_adsSlider').value + '%';
+  document.getElementById('pf_ongkirVal').textContent = document.getElementById('pf_ongkirSlider').value + '%';
+  pfCalculate();
+}
+
+function pfCalculate() {
+  const harga = parseFloat(document.getElementById('pf_harga').value) || 0;
+  const modal = parseFloat(document.getElementById('pf_modal').value) || 0;
+  const packaging = parseFloat(document.getElementById('pf_packaging').value) || 0;
+  const commPct = parseFloat(document.getElementById('pf_commSlider').value) || 0;
+  const adsPct = parseFloat(document.getElementById('pf_adsSlider').value) || 0;
+  const ongkirPct = parseFloat(document.getElementById('pf_ongkirSlider').value) || 0;
+
+  if (harga === 0) return;
+
+  const komisi = harga * commPct / 100;
+  const iklan = harga * adsPct / 100;
+  const ongkir = harga * ongkirPct / 100;
+  const totalPotong = komisi + iklan + ongkir;
+  const profit = harga - modal - packaging - totalPotong;
+  const margin = (profit / harga) * 100;
+
+  let verdict;
+  if (margin >= 25) verdict = { cls: 'bagus', text: '✅ Margin Sehat' };
+  else if (margin >= 15) verdict = { cls: 'lumayan', text: '⚠️ Margin Lumayan' };
+  else if (margin >= 1) verdict = { cls: 'bahaya', text: '🔴 Margin Tipis' };
+  else verdict = { cls: 'minus', text: '💀 RUGI!' };
+
+  const totalPct = commPct + adsPct + ongkirPct;
+  const minHarga = Math.ceil((modal + packaging) / (1 - totalPct/100 - 0.20));
+  const profitColor = profit >= 0 ? (margin >= 15 ? 'var(--green)' : 'var(--yellow)') : 'var(--red)';
+
+  document.getElementById('pf_result').innerHTML = `
+    <div class="card">
+      <div class="card-body" style="text-align:center;padding:28px 24px">
+        <div class="metric-label">Profit Bersih per Unit</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:44px;font-weight:800;color:${profitColor};letter-spacing:-2px;margin:8px 0">${fmt(profit)}</div>
+        <div style="font-size:15px;color:${profitColor};font-weight:600;margin-bottom:14px">Margin ${margin.toFixed(1)}%</div>
+        <div class="verdict ${verdict.cls}">${verdict.text}</div>
+        <button class="copy-btn" style="margin-top:14px;padding:7px 16px" onclick="pfSaveProduct()">💾 Simpan ke Produk Saya</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-icon">🔍</div><div class="card-title">Rincian Potongan</div></div>
+      <div class="card-body">
+        <div class="breakdown-item"><span class="breakdown-label dark">Harga Jual</span><span class="breakdown-val">${fmt(harga)}</span></div>
+        <div class="breakdown-item"><span class="breakdown-label">— Modal / HPP</span><span class="breakdown-val negative">-${fmt(modal)}</span></div>
+        <div class="breakdown-item"><span class="breakdown-label">— Packaging</span><span class="breakdown-val negative">-${fmt(packaging)}</span></div>
+        <div class="breakdown-item"><span class="breakdown-label">— Komisi (${commPct}%)</span><span class="breakdown-val negative">-${fmt(komisi)}</span></div>
+        <div class="breakdown-item"><span class="breakdown-label">— Iklan (${adsPct}%)</span><span class="breakdown-val negative">-${fmt(iklan)}</span></div>
+        <div class="breakdown-item"><span class="breakdown-label">— Ongkir (${ongkirPct}%)</span><span class="breakdown-val negative">-${fmt(ongkir)}</span></div>
+        <div class="breakdown-item total"><span class="breakdown-label dark">Profit Bersih</span><span class="breakdown-val" style="color:${profitColor}">${fmt(profit)}</span></div>
+        ${margin < 20 ? `<div style="margin-top:14px;padding:12px;background:#ff5c5c12;border:1px solid #ff5c5c30;border-radius:9px;font-size:12px;color:var(--red)">💡 Untuk margin 20%, harga jual minimum: <strong>${fmt(minHarga)}</strong></div>` : ''}
+      </div>
+    </div>
+  `;
+}
+pfUpdateCommission();
+
+async function pfSaveProduct() {
+  const nama = document.getElementById('pf_nama').value.trim();
+  const harga = parseFloat(document.getElementById('pf_harga').value) || 0;
+  const modal = parseFloat(document.getElementById('pf_modal').value) || 0;
+  const platform = document.getElementById('pf_platform').value;
+  const kategori = document.getElementById('pf_category').value;
+
+  if (!nama) {
+    alert('Isi dulu "Nama Produk" di form supaya bisa disimpan.');
+    return;
+  }
+  await psQuickSave({ nama, harga, modal, platform, kategori });
+  alert(`"${nama}" tersimpan ke Produk Saya.`);
+}
+
+// ============================================================
+// TOOL 2: SALES ANALYZER
+// ============================================================
+function getDemoProducts() {
+  return [
+    { name: 'Kaos Oversize Hitam Cotton Premium', omzet: 18500000, unit: 185, modal: 6500000, biaya: 3200000, refund: 2 },
+    { name: 'Kemeja Flannel Pria Lengan Panjang', omzet: 14200000, unit: 71, modal: 5680000, biaya: 2650000, refund: 5 },
+    { name: 'Celana Cargo Unisex Streetwear', omzet: 22100000, unit: 221, modal: 11050000, biaya: 9800000, refund: 14 },
+    { name: 'Jaket Bomber Varsity', omzet: 9800000, unit: 28, modal: 4200000, biaya: 1100000, refund: 1 },
+    { name: 'Tas Selempang Kanvas', omzet: 6300000, unit: 63, modal: 2520000, biaya: 3400000, refund: 8 },
+    { name: 'Topi Baseball Basic', omzet: 4100000, unit: 205, modal: 1230000, biaya: 480000, refund: 3 },
+    { name: 'Sweater Rajut Wanita', omzet: 11400000, unit: 57, modal: 4560000, biaya: 3900000, refund: 11 },
+  ];
+}
+
+function saComputeAnalysis(products) {
+  let totalOmzet=0, totalModal=0, totalBiaya=0, totalRefund=0, totalUnit=0;
+  const enriched = products.map(p => {
+    const profit = p.omzet - p.modal - p.biaya;
+    const margin = p.omzet > 0 ? (profit / p.omzet) * 100 : 0;
+    const biayaRatio = p.omzet > 0 ? (p.biaya / p.omzet) * 100 : 0;
+    const refundRatio = p.unit > 0 ? (p.refund / p.unit) * 100 : 0;
+    totalOmzet += p.omzet; totalModal += p.modal; totalBiaya += p.biaya; totalRefund += p.refund; totalUnit += p.unit;
+    return { ...p, profit, margin, biayaRatio, refundRatio };
+  });
+  const totalProfit = totalOmzet - totalModal - totalBiaya;
+  const totalMargin = totalOmzet > 0 ? (totalProfit / totalOmzet) * 100 : 0;
+  const sorted = [...enriched].sort((a,b) => b.margin - a.margin);
+
+  // Benchmark: margin terbaik yang SUDAH TERBUKTI dicapai toko ini sendiri
+  const benchmarkMargin = sorted.length ? Math.max(sorted[0].margin, 20) : 20;
+  const avgBiayaRatio = enriched.length ? enriched.reduce((s,p) => s + p.biayaRatio, 0) / enriched.length : 0;
+
+  // Hitung profit hilang per produk: selisih antara profit ideal (di benchmark) vs profit aktual
+  const withLoss = enriched.map(p => {
+    const idealProfit = (benchmarkMargin / 100) * p.omzet;
+    const lostProfit = Math.max(0, idealProfit - p.profit);
+    let cause = '';
+    if (p.refundRatio > 5) cause = `refund/pembatalan tinggi (${p.refundRatio.toFixed(1)}% dari unit terjual)`;
+    else if (p.biayaRatio > avgBiayaRatio * 1.3 && avgBiayaRatio > 0) cause = `biaya platform/iklan lebih boros dari rata-rata toko (${p.biayaRatio.toFixed(1)}% dari omzet)`;
+    else if (p.margin < 10) cause = `margin sangat tipis, kemungkinan harga jual terlalu rendah untuk biaya yang ada`;
+    else cause = `margin di bawah performa terbaik toko kamu`;
+    return { ...p, lostProfit, cause };
+  });
+
+  const totalLostProfit = withLoss.reduce((s,p) => s + p.lostProfit, 0);
+  const topLoss = [...withLoss].sort((a,b) => b.lostProfit - a.lostProfit).filter(p => p.lostProfit > 0).slice(0, 3);
+
+  return { enriched: withLoss, totalOmzet, totalModal, totalBiaya, totalProfit, totalMargin, totalRefund, totalUnit, best: sorted.slice(0,3), worst: sorted.slice(-3).reverse(), totalLostProfit, topLoss, benchmarkMargin };
+}
+
+function saRunDemo() { saRunAnalysis(getDemoProducts(), 'Data Contoh (Demo)'); }
+
+async function saHandleFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  saShowLoading('Membaca file...');
+  try {
+    const data = await file.arrayBuffer();
+    const workbook = XLSX.read(data);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    if (!rows.length) throw new Error('File kosong atau format tidak terbaca');
+
+    const headers = Object.keys(rows[0]).map(h => h.toString());
+    const findCol = (kw) => headers.find(h => kw.some(k => h.toLowerCase().includes(k)));
+    const colName = findCol(['nama produk','product name','nama barang','produk']);
+    const colOmzet = findCol(['harga','total penjualan','subtotal','amount','penghasilan']);
+    const colQty = findCol(['jumlah','qty','quantity','kuantiti']);
+    const colFee = findCol(['biaya','fee','komisi','admin']);
+    const colStatus = findCol(['status']);
+
+    if (!colName || !colOmzet) throw new Error('Kolom nama produk atau harga tidak ditemukan. Pastikan file adalah laporan penjualan asli dari Seller Center.');
+
+    const grouped = {};
+    rows.forEach(row => {
+      const name = (row[colName] || 'Produk Tanpa Nama').toString().trim();
+      if (!name) return;
+      const omzet = parseFloat(String(row[colOmzet]).replace(/[^0-9.-]/g,'')) || 0;
+      const qty = colQty ? (parseFloat(String(row[colQty]).replace(/[^0-9.-]/g,'')) || 1) : 1;
+      const fee = colFee ? (parseFloat(String(row[colFee]).replace(/[^0-9.-]/g,'')) || 0) : omzet * 0.08;
+      const status = colStatus ? String(row[colStatus]).toLowerCase() : '';
+      const isRefund = status.includes('batal') || status.includes('refund') || status.includes('return');
+      if (!grouped[name]) grouped[name] = { name, omzet:0, unit:0, modal:0, biaya:0, refund:0 };
+      grouped[name].omzet += omzet; grouped[name].unit += qty; grouped[name].biaya += fee;
+      grouped[name].modal += omzet * 0.4;
+      if (isRefund) grouped[name].refund += 1;
+    });
+
+    const products = Object.values(grouped).filter(p => p.omzet > 0);
+    if (!products.length) throw new Error('Tidak ada data produk valid yang bisa dibaca dari file ini.');
+    saRunAnalysis(products, file.name, !colFee);
+  } catch (err) {
+    saShowError(err.message);
+  }
+}
+
+function saShowLoading(step) {
+  document.getElementById('sa_main').innerHTML = `<div class="card"><div class="loading-state"><div class="spinner"></div><div class="loading-text">${step}</div></div></div>`;
+}
+function saShowError(msg) {
+  document.getElementById('sa_main').innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px 24px"><div style="font-size:36px;margin-bottom:14px">⚠️</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;margin-bottom:8px">File tidak bisa diproses</div><div style="font-size:13px;color:var(--muted);margin-bottom:20px">${msg}</div><button class="action-btn" style="width:auto;padding:10px 22px" onclick="saReset()">Coba Lagi</button></div></div>`;
+}
+function saReset() {
+  document.getElementById('sa_main').innerHTML = `
+    <div class="upload-card" id="sa_uploadCard" onclick="document.getElementById('fileInput').click()">
+      <div class="upload-icon">📊</div>
+      <div class="upload-title">Upload Laporan Penjualan</div>
+      <div class="upload-sub">File Excel/CSV dari Shopee, Tokopedia, atau TikTok Shop Seller Center</div>
+      <button class="action-btn" style="width:auto;padding:10px 22px" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Pilih File</button>
+      <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" onchange="saHandleFile(event)"/>
+      <button class="demo-link" onclick="event.stopPropagation(); saRunDemo()">Belum punya file? Coba data contoh →</button>
+    </div>`;
+}
+
+async function saSaveProduct(nama, harga, modal) {
+  await psQuickSave({ nama, harga, modal, platform: 'shopee', kategori: 'lainnya' });
+  alert(`"${nama}" tersimpan ke Produk Saya dengan estimasi harga & modal per unit.`);
+}
+
+let saLastAnalysis = null;
+
+async function saBulkSaveGroup(group) {
+  if (!saLastAnalysis) return;
+  const list = group === 'best' ? saLastAnalysis.best : group === 'worst' ? saLastAnalysis.worst : saLastAnalysis.enriched;
+  const items = list.map(p => ({
+    nama: p.name,
+    harga: Math.round(p.omzet / Math.max(p.unit, 1)),
+    modal: Math.round(p.modal / Math.max(p.unit, 1)),
+    platform: 'shopee',
+    kategori: 'lainnya'
+  }));
+  await psBulkSave(items);
+  const labels = { best: 'produk terbaik', worst: 'produk bermasalah', all: 'semua produk' };
+  alert(`${items.length} ${labels[group]} berhasil disimpan ke Produk Saya.`);
+}
+
+async function saRunAnalysis(products, sourceLabel, estimatedModal) {
+  saShowLoading('Menghitung profit per produk...');
+  const a = saComputeAnalysis(products);
+  await new Promise(r => setTimeout(r, 300));
+  saShowLoading('AI sedang menyusun rekomendasi...');
+
+  const productSummary = a.enriched.map(p => `${p.name}: omzet ${fmt(p.omzet)}, ${p.unit} unit, profit aktual ${fmt(p.profit)}, margin ${p.margin.toFixed(1)}%, profit hilang ${fmt(p.lostProfit)} (penyebab: ${p.cause})`).join('\n');
+  const topLossSummary = a.topLoss.map(p => `${p.name}: kehilangan ${fmt(p.lostProfit)} karena ${p.cause}`).join('\n');
+
+  const prompt = `Kamu adalah konsultan bisnis e-commerce Indonesia yang tugasnya menemukan uang yang "hilang" dari toko seller karena inefisiensi, bukan sekadar melaporkan angka.
+
+Data toko (${sourceLabel}):
+Total omzet: ${fmt(a.totalOmzet)}, Total profit aktual: ${fmt(a.totalProfit)}, Margin: ${a.totalMargin.toFixed(1)}%
+Benchmark margin terbaik yang SUDAH TERBUKTI dicapai toko ini sendiri: ${a.benchmarkMargin.toFixed(1)}%
+Total estimasi profit hilang (dibanding kalau semua produk capai benchmark itu): ${fmt(a.totalLostProfit)}
+
+3 kontributor terbesar profit hilang:
+${topLossSummary || 'Tidak ada kontributor signifikan'}
+
+Detail semua produk:
+${productSummary}
+
+Format jawaban PERSIS:
+=== RINGKASAN ===
+[1-2 kalimat tajam yang bikin seller sadar ada uang yang bisa diselamatkan. Sebutkan angka total profit hilang secara eksplisit. Nada seperti menemukan sesuatu yang tersembunyi, bukan laporan statistik]
+=== TEMUAN UTAMA ===
+[Untuk masing-masing dari 3 kontributor profit hilang teratas, tulis 1 poin yang jelaskan APA yang terjadi dan KENAPA - gunakan angka rupiah spesifik per produk. Mulai tiap poin dengan 🔴]
+=== REKOMENDASI AKSI ===
+[3 rekomendasi konkret yang bisa dikerjakan minggu ini untuk selamatkan profit yang hilang itu - sebutkan nama produk, angka spesifik, dan aksi yang jelas seperti "kurangi voucher dari X% ke Y%"]
+
+Bahasa Indonesia, nada seperti detektif yang baru menemukan bukti - percaya diri dan spesifik, bukan generik.`;
+
+  let aiText = '';
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content: prompt }] })
+    });
+    const data = await res.json();
+    aiText = data.content.map(i => i.text || '').join('\n');
+  } catch (err) {
+    aiText = '=== RINGKASAN ===\nAI insight gagal dimuat.\n=== TEMUAN UTAMA ===\n(tidak tersedia)\n=== REKOMENDASI AKSI ===\n(tidak tersedia)';
+  }
+  saRenderResults(a, aiText, sourceLabel, estimatedModal);
+}
+
+function saRenderResults(a, aiText, sourceLabel, estimatedModal) {
+  saLastAnalysis = a;
+  const sections = {
+    ringkasan: (aiText.match(/=== RINGKASAN ===([\s\S]*?)(?====|$)/) || [,''])[1].trim(),
+    temuan: (aiText.match(/=== TEMUAN UTAMA ===([\s\S]*?)(?====|$)/) || [,''])[1].trim(),
+    rekomendasi: (aiText.match(/=== REKOMENDASI AKSI ===([\s\S]*?)(?====|$)/) || [,''])[1].trim(),
+  };
+  const marginColor = a.totalMargin >= 20 ? 'var(--green)' : a.totalMargin >= 10 ? 'var(--yellow)' : 'var(--red)';
+
+  const hasLoss = a.totalLostProfit > 1000;
+
+  document.getElementById('sa_main').innerHTML = `
+    <button class="demo-link" style="margin:0 0 16px" onclick="saReset()">← Upload file lain</button>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Sumber: ${sourceLabel}${estimatedModal ? ' · Modal diestimasi 40% dari harga jual' : ''}</div>
+
+    ${hasLoss ? `
+    <div class="card" style="border-color:#ff5c5c40">
+      <div class="card-body" style="text-align:center;padding:32px 24px;background:linear-gradient(180deg, #ff5c5c10, transparent)">
+        <div style="font-size:13px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px">LabaLab Menemukan</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:38px;font-weight:800;color:var(--red);letter-spacing:-1px;margin-bottom:6px">💰 ${fmt(a.totalLostProfit)}</div>
+        <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">profit hilang bulan ini</div>
+        <div style="font-size:12.5px;color:var(--muted)">dibanding kalau semua produk capai margin terbaik toko kamu sendiri (${a.benchmarkMargin.toFixed(1)}%)</div>
+      </div>
+    </div>` : `
+    <div class="card" style="border-color:#10d98e40">
+      <div class="card-body" style="text-align:center;padding:28px 24px">
+        <div style="font-size:34px;margin-bottom:8px">✅</div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--green)">Toko kamu sudah efisien</div>
+        <div style="font-size:12.5px;color:var(--muted);margin-top:4px">Tidak ada profit hilang signifikan yang terdeteksi bulan ini</div>
+      </div>
+    </div>`}
+
+    <div class="metrics-grid">
+      <div class="metric-box"><div class="metric-label">Total Omzet</div><div class="metric-value">${fmt(a.totalOmzet)}</div></div>
+      <div class="metric-box"><div class="metric-label">Profit Aktual</div><div class="metric-value" style="color:${a.totalProfit>=0?'var(--green)':'var(--red)'}">${fmt(a.totalProfit)}</div></div>
+      <div class="metric-box"><div class="metric-label">Margin</div><div class="metric-value" style="color:${marginColor}">${a.totalMargin.toFixed(1)}%</div></div>
+    </div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">🕵️</div><div class="card-title">Ringkasan Temuan</div></div><div class="card-body"><div class="insight-content">${sections.ringkasan}</div></div></div>
+
+    ${a.topLoss.length ? `<div class="card"><div class="card-header"><div class="card-icon">🔴</div><div class="card-title">Penyebab Profit Hilang</div></div><div class="card-body">
+      ${a.topLoss.map(p => `<div class="product-row"><div class="product-info"><div class="product-name">${p.name}</div><div class="product-meta">${p.cause}</div></div><div class="product-metric"><div class="product-margin" style="color:var(--red)">-${fmt(p.lostProfit)}</div><div class="product-profit">margin ${p.margin.toFixed(1)}%</div></div></div>`).join('')}
+    </div></div>` : ''}
+
+    <div class="card"><div class="card-header"><div class="card-icon">🔍</div><div class="card-title">Detail Temuan</div></div><div class="card-body"><div class="insight-content">${sections.temuan}</div></div></div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="copy-btn" onclick="saBulkSaveGroup('best')">💾 Simpan semua produk terbaik</button>
+      <button class="copy-btn" onclick="saBulkSaveGroup('worst')">💾 Simpan semua produk bermasalah</button>
+      <button class="copy-btn" onclick="saBulkSaveGroup('all')">📥 Import semua produk dari laporan</button>
+    </div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">🏆</div><div class="card-title">Produk Terbaik</div></div><div class="card-body">
+      ${a.best.map(p => `<div class="product-row"><div class="product-info"><div class="product-name">${p.name}</div><div class="product-meta">${p.unit} unit · omzet ${fmt(p.omzet)}</div></div><div class="product-metric"><div class="product-margin" style="color:var(--green)">${p.margin.toFixed(1)}%</div><div class="product-profit">${fmt(p.profit)}</div></div><button class="copy-btn" style="margin-left:8px" onclick='saSaveProduct(${JSON.stringify(p.name)}, ${Math.round(p.omzet/Math.max(p.unit,1))}, ${Math.round(p.modal/Math.max(p.unit,1))})'>Simpan</button></div>`).join('')}
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">💡</div><div class="card-title">Selamatkan Profit Minggu Ini</div></div><div class="card-body"><div class="insight-content">${sections.rekomendasi}</div></div></div>
+  `;
+}
+
+// ============================================================
+// TOOL 3: PROMO SIMULATOR
+// ============================================================
+function prSync() {
+  document.getElementById('pr_komisiVal').textContent = document.getElementById('pr_komisiSlider').value + '%';
+  document.getElementById('pr_diskonVal').textContent = document.getElementById('pr_diskonSlider').value + '%';
+  document.getElementById('pr_lonjakanVal').textContent = document.getElementById('pr_lonjakanSlider').value + '%';
+  prCalculate();
+}
+
+function prCalculate() {
+  const hargaNormal = parseFloat(document.getElementById('pr_hargaNormal').value) || 0;
+  const modal = parseFloat(document.getElementById('pr_modal').value) || 0;
+  const komisiPct = parseFloat(document.getElementById('pr_komisiSlider').value) || 0;
+  const orderNormal = parseFloat(document.getElementById('pr_orderNormal').value) || 0;
+  const diskonPct = parseFloat(document.getElementById('pr_diskonSlider').value) || 0;
+  const voucher = parseFloat(document.getElementById('pr_voucher').value) || 0;
+  const ongkirBiaya = parseFloat(document.getElementById('pr_ongkirBiaya').value) || 0;
+  const lonjakanPct = parseFloat(document.getElementById('pr_lonjakanSlider').value) || 0;
+  if (hargaNormal === 0) return;
+
+  const komisiNormal = hargaNormal * komisiPct / 100;
+  const profitNormal = hargaNormal - modal - komisiNormal;
+  const totalProfitNormal = profitNormal * orderNormal;
+
+  const hargaPromo = hargaNormal * (1 - diskonPct/100);
+  const komisiPromo = hargaPromo * komisiPct / 100;
+  const profitPromo = hargaPromo - modal - komisiPromo - voucher - ongkirBiaya;
+  const orderPromo = orderNormal * (1 + lonjakanPct/100);
+  const totalProfitPromo = profitPromo * orderPromo;
+
+  let bepOrder = profitPromo > 0 ? Math.ceil(totalProfitNormal / profitPromo) : 0;
+  const profitDiff = totalProfitPromo - totalProfitNormal;
+  const isRugiPerUnit = profitPromo < 0;
+  const isWorthIt = profitDiff >= 0;
+
+  let verdict, icon, color, sub;
+  if (isRugiPerUnit) {
+    verdict='JANGAN IKUT'; icon='🚨'; color='var(--red)';
+    sub=`Setiap unit yang terjual saat promo ini bikin kamu rugi ${fmt(Math.abs(profitPromo))}. Semakin laris, semakin rugi.`;
+  } else if (isWorthIt) {
+    verdict='LAYAK DIIKUTI'; icon='✅'; color='var(--green)';
+    sub=`Dengan estimasi kenaikan order ${lonjakanPct}%, total profit tetap lebih tinggi dibanding normal.`;
+  } else {
+    verdict='PERLU DIPERTIMBANGKAN'; icon='⚠️'; color='var(--yellow)';
+    sub=`Profit per unit masih positif, tapi kenaikan order belum cukup menutupi selisih harga normal.`;
+  }
+
+  document.getElementById('pr_result').innerHTML = `
+    <div class="card"><div class="card-body" style="text-align:center;padding:28px 24px">
+      <div style="font-size:40px;margin-bottom:10px">${icon}</div>
+      <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:${color};margin-bottom:6px">${verdict}</div>
+      <div style="font-size:13.5px;color:var(--muted);max-width:380px;margin:0 auto">${sub}</div>
+    </div></div>
+    <div class="card"><div class="card-header"><div class="card-icon">⚖️</div><div class="card-title">Profit per Unit</div></div><div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">
+        <div><div class="metric-label">Normal</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800">${fmt(profitNormal)}</div></div>
+        <div style="color:var(--muted)">→</div>
+        <div><div class="metric-label">Saat Promo</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:${profitPromo>=0?'var(--green)':'var(--red)'}">${fmt(profitPromo)}</div></div>
+      </div>
+    </div></div>
+    ${!isRugiPerUnit ? `<div class="card"><div class="card-header"><div class="card-icon">📊</div><div class="card-title">Titik Impas (Break-Even)</div></div><div class="card-body">
+      <div style="display:flex;align-items:center;gap:14px;padding:16px;background:var(--surface2);border-radius:10px">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:800;color:var(--accent2)">${bepOrder}</div>
+        <div style="font-size:12.5px;color:var(--muted)">order dibutuhkan agar profit sama dengan kondisi normal.<br>Estimasi kamu: <strong style="color:var(--accent2)">${Math.round(orderPromo)} order</strong></div>
+      </div>
+    </div></div>` : ''}
+    <div class="card"><div class="card-header"><div class="card-icon">💰</div><div class="card-title">Total Estimasi Profit</div></div><div class="card-body">
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;text-align:center">
+        <div><div class="metric-label">Tanpa Promo</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800">${fmt(totalProfitNormal)}</div></div>
+        <div style="color:var(--muted)">vs</div>
+        <div><div class="metric-label">Dengan Promo</div><div style="font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:${totalProfitPromo>=totalProfitNormal?'var(--green)':'var(--red)'}">${fmt(totalProfitPromo)}</div></div>
+      </div>
+      <div style="text-align:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;color:var(--muted)">Selisih: <strong style="color:${profitDiff>=0?'var(--green)':'var(--red)'}">${profitDiff>=0?'+':''}${fmt(profitDiff)}</strong></div>
+    </div></div>
+  `;
+}
+prCalculate();
+
+// ============================================================
+// TOOL 4: PRODUCT DOCTOR
+// ============================================================
+let pdPhotoBase64 = null;
+let pdPhotoMediaType = null;
+
+function pdHandlePhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    const result = ev.target.result;
+    pdPhotoBase64 = result.split(',')[1];
+    pdPhotoMediaType = file.type;
+    const preview = document.getElementById('pd_photoPreview');
+    preview.src = result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function pdAudit() {
+  const judul = document.getElementById('pd_judul').value.trim();
+  const deskripsi = document.getElementById('pd_deskripsi').value.trim();
+  const harga = document.getElementById('pd_harga').value.trim();
+  const kategori = document.getElementById('pd_kategori').value;
+
+  if (!judul && !deskripsi && !pdPhotoBase64) {
+    alert('Isi minimal judul atau deskripsi produk untuk diaudit.');
+    return;
+  }
+
+  document.getElementById('pd_result').innerHTML = `<div class="card"><div class="loading-state"><div class="spinner"></div><div class="loading-text">AI sedang mengaudit listing kamu...</div></div></div>`;
+
+  const textPrompt = `Kamu adalah expert listing optimization untuk marketplace Indonesia (Shopee/Tokopedia).
+
+Audit listing produk ini:
+- Judul sekarang: ${judul || '(tidak diisi)'}
+- Deskripsi sekarang: ${deskripsi || '(tidak diisi)'}
+- Harga: ${harga ? 'Rp ' + harga : '(tidak diisi)'}
+- Kategori: ${kategori}
+${pdPhotoBase64 ? '- Foto produk utama terlampir, ikut nilai kualitas fotonya juga.' : '- Tidak ada foto dilampirkan.'}
+
+Format jawaban PERSIS seperti ini:
+=== SKOR ===
+[angka 0-100 saja, tanpa teks lain]
+=== MASALAH ===
+[3-5 poin masalah, mulai setiap poin dengan ❌, singkat dan spesifik]
+=== JUDUL BARU ===
+[1 judul baru yang dioptimasi, max 70 karakter]
+=== DESKRIPSI BARU ===
+[deskripsi baru 100-180 kata, persuasif, dengan emoji relevan]
+=== IDE FOTO ===
+[2-3 saran konkret untuk foto produk, spesifik untuk kategori ini]
+
+Bahasa Indonesia, to the point, seperti expert yang review portofolio.`;
+
+  const content = [];
+  if (pdPhotoBase64) {
+    content.push({ type: "image", source: { type: "base64", media_type: pdPhotoMediaType, data: pdPhotoBase64 } });
+  }
+  content.push({ type: "text", text: textPrompt });
+
+  let aiText = '';
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: 1000, messages: [{ role: "user", content }] })
+    });
+    const data = await res.json();
+    aiText = data.content.map(i => i.text || '').join('\n');
+  } catch (err) {
+    pdShowError('Gagal menghubungi AI. Coba lagi ya.');
+    return;
+  }
+
+  pdRenderResults(aiText);
+}
+
+function pdShowError(msg) {
+  document.getElementById('pd_result').innerHTML = `<div class="card"><div class="card-body" style="text-align:center;padding:40px 24px"><div style="font-size:36px;margin-bottom:14px">⚠️</div><div style="font-size:13px;color:var(--muted)">${msg}</div></div></div>`;
+}
+
+async function pdSaveProduct() {
+  const nama = document.getElementById('pd_judul').value.trim();
+  const harga = parseFloat(document.getElementById('pd_harga').value) || 0;
+  const modal = parseFloat(document.getElementById('pd_modal').value) || 0;
+  const kategori = document.getElementById('pd_kategori').value;
+
+  if (!nama) {
+    alert('Isi dulu "Judul Produk" supaya bisa disimpan.');
+    return;
+  }
+  await psQuickSave({ nama, harga, modal, platform: 'shopee', kategori });
+  alert(`"${nama}" tersimpan ke Produk Saya.`);
+}
+
+async function pdSaveOptimized(judulBaru) {
+  const namaLama = document.getElementById('pd_judul').value.trim();
+  const harga = parseFloat(document.getElementById('pd_harga').value) || 0;
+  const modal = parseFloat(document.getElementById('pd_modal').value) || 0;
+  const kategori = document.getElementById('pd_kategori').value;
+
+  if (!namaLama) {
+    alert('LabaLab perlu tahu nama produk sebelumnya untuk update — isi "Judul Produk" dulu.');
+    return;
+  }
+
+  // Update produk lama (dicari berdasarkan nama lama) dengan judul baru hasil optimasi
+  const products = await psLoadProducts();
+  const idx = products.findIndex(p => p.nama.toLowerCase() === namaLama.toLowerCase());
+  if (idx >= 0) {
+    products[idx] = { ...products[idx], nama: judulBaru, harga: harga || products[idx].harga, modal: modal || products[idx].modal, kategori };
+    await psSaveProducts(products);
+  } else {
+    await psQuickSave({ nama: judulBaru, harga, modal, platform: 'shopee', kategori });
+  }
+  await psRefreshAll();
+  alert(`Judul dioptimasi tersimpan sebagai: "${judulBaru}"`);
+}
+
+function pdCopyText(id, btn) {
+  const el = document.getElementById(id);
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    btn.textContent = '✓ Tersalin'; btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Salin'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function pdRenderResults(aiText) {
+  const skorMatch = aiText.match(/=== SKOR ===([\s\S]*?)(?====|$)/);
+  const skor = skorMatch ? parseInt(skorMatch[1].replace(/[^0-9]/g,'')) || 50 : 50;
+  const masalah = (aiText.match(/=== MASALAH ===([\s\S]*?)(?====|$)/) || [,''])[1].trim();
+  const judulBaru = (aiText.match(/=== JUDUL BARU ===([\s\S]*?)(?====|$)/) || [,''])[1].trim();
+  const deskripsiBaru = (aiText.match(/=== DESKRIPSI BARU ===([\s\S]*?)(?====|$)/) || [,''])[1].trim();
+  const ideFoto = (aiText.match(/=== IDE FOTO ===([\s\S]*?)(?====|$)/) || [,''])[1].trim();
+
+  const scoreColor = skor >= 75 ? 'var(--green)' : skor >= 50 ? 'var(--yellow)' : 'var(--red)';
+  const circumference = 2 * Math.PI * 38;
+  const offset = circumference * (1 - skor/100);
+
+  document.getElementById('pd_result').innerHTML = `
+    <div class="card"><div class="card-body">
+      <div class="score-ring-wrap">
+        <div class="score-ring">
+          <svg width="90" height="90">
+            <circle cx="45" cy="45" r="38" fill="none" stroke="var(--border)" stroke-width="8"/>
+            <circle cx="45" cy="45" r="38" fill="none" stroke="${scoreColor}" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+          </svg>
+          <div class="score-num" style="color:${scoreColor}">${skor}</div>
+        </div>
+        <div>
+          <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;margin-bottom:4px">Listing Score</div>
+          <div style="font-size:12.5px;color:var(--muted)">${skor >= 75 ? 'Sudah bagus, tinggal polish' : skor >= 50 ? 'Perlu beberapa perbaikan' : 'Banyak yang perlu diperbaiki'}</div>
+        </div>
+      </div>
+      <button class="copy-btn" style="margin-top:14px" onclick="pdSaveProduct()">💾 Simpan produk ini ke Produk Saya</button>
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">❌</div><div class="card-title">Masalah Ditemukan</div></div><div class="card-body">
+      <div class="insight-content">${masalah}</div>
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">✨</div><div class="card-title">Judul Baru</div><button class="copy-btn" style="margin-left:auto" onclick="pdCopyText('pd_judulBaru', this)">Salin</button></div><div class="card-body">
+      <div class="insight-content" id="pd_judulBaru">${judulBaru}</div>
+      <button class="copy-btn" style="margin-top:12px" onclick='pdSaveOptimized(${JSON.stringify(judulBaru.split('\n')[0])})'>💾 Simpan hasil optimasi ke Produk Saya</button>
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">📝</div><div class="card-title">Deskripsi Baru</div><button class="copy-btn" style="margin-left:auto" onclick="pdCopyText('pd_deskripsiBaru', this)">Salin</button></div><div class="card-body">
+      <div class="insight-content" id="pd_deskripsiBaru">${deskripsiBaru}</div>
+    </div></div>
+
+    <div class="card"><div class="card-header"><div class="card-icon">📷</div><div class="card-title">Ide Perbaikan Foto</div></div><div class="card-body">
+      <div class="insight-content">${ideFoto}</div>
+    </div></div>
+  `;
+}
+
+// ============================================================
+// TOOL 5: PRODUK SAYA (MEMORY / LOCK-IN) — terhubung ke semua tools
+// ============================================================
+const PRODUCTS_KEY = 'labalab-produk-saya';
+let cachedProducts = [];
+
+async function psLoadProducts() {
+  try {
+    const result = await window.storage.get(PRODUCTS_KEY, false);
+    return result && result.value ? JSON.parse(result.value) : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+async function psSaveProducts(products) {
+  try {
+    await window.storage.set(PRODUCTS_KEY, JSON.stringify(products), false);
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+function psComputeMargin(p) {
+  const profit = p.harga - p.modal;
+  const margin = p.harga > 0 ? (profit / p.harga) * 100 : 0;
+  return { profit, margin };
+}
+
+// Refresh cache + populate semua dropdown selector di semua tools
+async function psRefreshAll() {
+  cachedProducts = await psLoadProducts();
+  psPopulateSelectors();
+  if (document.getElementById('ps_list')) { psRenderDashboard(cachedProducts); psRenderList(cachedProducts); }
+}
+
+function psPopulateSelectors() {
+  const selectors = ['pf_productSelect', 'pr_productSelect', 'pd_productSelect'];
+  const fields = ['pf_selectorField', 'pr_selectorField', 'pd_selectorField'];
+
+  selectors.forEach((selId, i) => {
+    const sel = document.getElementById(selId);
+    const field = document.getElementById(fields[i]);
+    if (!sel) return;
+    if (!cachedProducts.length) { field.style.display = 'none'; return; }
+    field.style.display = 'block';
+    const platformIcons = { shopee: '🟠', tokopedia: '🟢', tiktok: '🎵' };
+    const currentVal = sel.value;
+    sel.innerHTML = '<option value="">-- Isi manual --</option>' +
+      cachedProducts.map(p => `<option value="${p.id}">${platformIcons[p.platform]||''} ${p.nama}</option>`).join('');
+    if (cachedProducts.find(p => p.id === currentVal)) sel.value = currentVal;
+  });
+}
+
+function pfLoadFromProduct() {
+  const id = document.getElementById('pf_productSelect').value;
+  if (!id) return;
+  const p = cachedProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pf_nama').value = p.nama;
+  document.getElementById('pf_platform').value = p.platform;
+  document.getElementById('pf_category').value = p.kategori;
+  document.getElementById('pf_harga').value = p.harga;
+  document.getElementById('pf_modal').value = p.modal;
+  pfUpdateCommission();
+}
+
+function prLoadFromProduct() {
+  const id = document.getElementById('pr_productSelect').value;
+  if (!id) return;
+  const p = cachedProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pr_hargaNormal').value = p.harga;
+  document.getElementById('pr_modal').value = p.modal;
+  prCalculate();
+}
+
+function pdLoadFromProduct() {
+  const id = document.getElementById('pd_productSelect').value;
+  if (!id) return;
+  const p = cachedProducts.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('pd_judul').value = p.nama;
+  document.getElementById('pd_harga').value = p.harga;
+  document.getElementById('pd_modal').value = p.modal;
+  document.getElementById('pd_kategori').value = p.kategori;
+}
+
+// Navigasi cepat dari kartu produk ke tools lain, sekalian auto-isi datanya
+function psGoTo(tool, id) {
+  switchTool(tool);
+  const selMap = { profit: 'pf_productSelect', promo: 'pr_productSelect', doctor: 'pd_productSelect' };
+  const loadMap = { profit: pfLoadFromProduct, promo: prLoadFromProduct, doctor: pdLoadFromProduct };
+  const sel = document.getElementById(selMap[tool]);
+  if (sel) {
+    sel.value = id;
+    loadMap[tool]();
+  }
+}
+
+// Simpan / update produk dari tool manapun (dipanggil oleh tombol "Simpan ke Produk Saya")
+async function psQuickSave(data) {
+  const products = await psLoadProducts();
+  const existingIdx = products.findIndex(p => p.nama.toLowerCase() === data.nama.toLowerCase());
+  if (existingIdx >= 0) {
+    products[existingIdx] = { ...products[existingIdx], ...data };
+  } else {
+    products.unshift({ id: Date.now().toString(), createdAt: new Date().toISOString(), ...data });
+  }
+  await psSaveProducts(products);
+  await psRefreshAll();
+  return true;
+}
+
+// Simpan banyak produk sekaligus (untuk import massal dari Sales Analyzer) - 1x load, 1x save
+async function psBulkSave(items) {
+  const products = await psLoadProducts();
+  items.forEach(data => {
+    const existingIdx = products.findIndex(p => p.nama.toLowerCase() === data.nama.toLowerCase());
+    if (existingIdx >= 0) products[existingIdx] = { ...products[existingIdx], ...data };
+    else products.unshift({ id: Date.now().toString() + Math.random().toString(36).slice(2,7), createdAt: new Date().toISOString(), ...data });
+  });
+  await psSaveProducts(products);
+  await psRefreshAll();
+}
+
+let psEditingId = null;
+
+async function psAddProduct() {
+  const nama = document.getElementById('ps_nama').value.trim();
+  const platform = document.getElementById('ps_platform').value;
+  const kategori = document.getElementById('ps_kategori').value;
+  const harga = parseFloat(document.getElementById('ps_harga').value) || 0;
+  const modal = parseFloat(document.getElementById('ps_modal').value) || 0;
+
+  if (!nama || harga === 0) {
+    document.getElementById('ps_saveStatus').textContent = 'Isi minimal nama produk dan harga jual.';
+    document.getElementById('ps_saveStatus').style.color = 'var(--red)';
+    return;
+  }
+
+  const products = await psLoadProducts();
+  if (psEditingId) {
+    const idx = products.findIndex(p => p.id === psEditingId);
+    if (idx >= 0) products[idx] = { ...products[idx], nama, platform, kategori, harga, modal };
+    await psSaveProducts(products);
+    await psRefreshAll();
+    document.getElementById('ps_saveStatus').textContent = '✓ Produk diperbarui';
+    document.getElementById('ps_saveStatus').style.color = 'var(--green)';
+    psCancelEdit();
+  } else {
+    const saved = await psQuickSave({ nama, platform, kategori, harga, modal });
+    document.getElementById('ps_saveStatus').textContent = saved ? '✓ Produk tersimpan' : 'Gagal menyimpan — coba lagi';
+    document.getElementById('ps_saveStatus').style.color = saved ? 'var(--green)' : 'var(--red)';
+  }
+
+  document.getElementById('ps_nama').value = '';
+  document.getElementById('ps_harga').value = '';
+  document.getElementById('ps_modal').value = '';
+}
+
+function psEditProduct(id) {
+  const p = cachedProducts.find(x => x.id === id);
+  if (!p) return;
+  psEditingId = id;
+  document.getElementById('ps_nama').value = p.nama;
+  document.getElementById('ps_platform').value = p.platform;
+  document.getElementById('ps_kategori').value = p.kategori;
+  document.getElementById('ps_harga').value = p.harga;
+  document.getElementById('ps_modal').value = p.modal;
+  document.getElementById('ps_formTitle').textContent = `Edit: ${p.nama}`;
+  document.getElementById('ps_submitBtn').textContent = '💾 Update Produk';
+  document.getElementById('ps_cancelEditBtn').style.display = 'block';
+  document.getElementById('ps_saveStatus').textContent = '';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function psCancelEdit() {
+  psEditingId = null;
+  document.getElementById('ps_nama').value = '';
+  document.getElementById('ps_harga').value = '';
+  document.getElementById('ps_modal').value = '';
+  document.getElementById('ps_formTitle').textContent = 'Tambah Produk';
+  document.getElementById('ps_submitBtn').textContent = '💾 Simpan Produk';
+  document.getElementById('ps_cancelEditBtn').style.display = 'none';
+}
+
+async function psDeleteProduct(id) {
+  const products = await psLoadProducts();
+  const filtered = products.filter(p => p.id !== id);
+  await psSaveProducts(filtered);
+  await psRefreshAll();
+}
+
+function psRenderDashboard(products) {
+  const dashEl = document.getElementById('ps_dashboard');
+  if (!dashEl) return;
+  if (!products.length) { dashEl.innerHTML = ''; return; }
+
+  let sehat = 0, tipis = 0, rugi = 0;
+  products.forEach(p => {
+    const { margin } = psComputeMargin(p);
+    if (margin >= 20) sehat++;
+    else if (margin >= 5) tipis++;
+    else rugi++;
+  });
+
+  dashEl.innerHTML = `
+    <div class="metrics-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="metric-box"><div class="metric-label">Total Produk</div><div class="metric-value">${products.length}</div></div>
+      <div class="metric-box"><div class="metric-label">Margin Sehat</div><div class="metric-value" style="color:var(--green)">${sehat}</div></div>
+      <div class="metric-box"><div class="metric-label">Margin Tipis</div><div class="metric-value" style="color:var(--yellow)">${tipis}</div></div>
+      <div class="metric-box"><div class="metric-label">Rugi</div><div class="metric-value" style="color:var(--red)">${rugi}</div></div>
+    </div>
+  `;
+}
+
+function psRenderList(products) {
+  const listEl = document.getElementById('ps_list');
+  if (!listEl) return;
+
+  if (!products.length) {
+    listEl.innerHTML = `
+      <div class="card">
+        <div class="empty-state">
+          <div class="empty-icon">📦</div>
+          <p style="font-size:14px">Belum ada produk tersimpan.<br>Tambahkan produk pertama kamu di kiri, atau simpan langsung dari hasil tools lain.</p>
+        </div>
+      </div>`;
+    return;
+  }
+
+  const platformIcons = { shopee: '🟠', tokopedia: '🟢', tiktok: '🎵' };
+
+  listEl.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon">📦</div>
+        <div class="card-title">${products.length} Produk Tersimpan</div>
+      </div>
+      <div class="card-body" style="padding:12px 20px">
+        ${products.map(p => {
+          const { profit, margin } = psComputeMargin(p);
+          const marginColor = margin >= 20 ? 'var(--green)' : margin >= 5 ? 'var(--yellow)' : 'var(--red)';
+          return `
+            <div style="padding:14px 0;border-bottom:1px solid var(--border)">
+              <div class="product-row" style="border:none;padding:0 0 10px 0">
+                <div class="product-info">
+                  <div class="product-name">${platformIcons[p.platform] || ''} ${p.nama}</div>
+                  <div class="product-meta">${fmt(p.harga)} · modal ${fmt(p.modal)} · ${p.kategori}</div>
+                </div>
+                <div class="product-metric">
+                  <div class="product-margin" style="color:${marginColor}">${margin.toFixed(1)}%</div>
+                  <div class="product-profit">${fmt(profit)}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="copy-btn" onclick="psGoTo('profit','${p.id}')">🧮 Cek Profit</button>
+                <button class="copy-btn" onclick="psGoTo('promo','${p.id}')">🔥 Simulasi Promo</button>
+                <button class="copy-btn" onclick="psGoTo('doctor','${p.id}')">🩺 Audit Listing</button>
+                <button class="copy-btn" onclick="psEditProduct('${p.id}')">✏️ Edit</button>
+                <button class="copy-btn" onclick="psDeleteProduct('${p.id}')">🗑️ Hapus</button>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:12px">
+      Data ini tersimpan otomatis dan dipakai bareng di semua tools LabaLab.
+    </div>
+  `;
+}
+
+psRefreshAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/* ============================================
+   LABALAB DESIGN SYSTEM
+   Ported 1:1 from prototype (dark purple theme).
+   Tokens become Tailwind utilities, e.g.
+   bg-surface, text-accent, border-border, rounded-card.
+   ============================================ */
+@theme {
+  --color-bg: #0a0a0d;
+  --color-surface: #13131a;
+  --color-surface2: #1c1c26;
+  --color-surface3: #242433;
+  --color-border: #2a2a3d;
+
+  --color-accent: #7c6ffd;
+  --color-accent2: #a78bfa;
+
+  --color-green: #10d98e;
+  --color-red: #ff5c5c;
+  --color-yellow: #fbbf24;
+
+  --color-text: #eeeef5;
+  --color-muted: #7777a0;
+
+  --radius-card: 14px;
+
+  /* Fonts wired up in layout.tsx via next/font */
+  --font-sans: var(--font-inter), "Inter", sans-serif;
+  --font-display: var(--font-jakarta), "Plus Jakarta Sans", sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+/* Thin purple scrollbar from prototype */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
