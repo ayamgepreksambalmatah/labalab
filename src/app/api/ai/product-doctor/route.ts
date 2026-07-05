@@ -1,15 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { createServerClient } from "@/lib/supabase/server";
-import { checkMonthlyLimit } from "@/lib/ai/limits";
+import { checkAndIncrementQuota, rollbackQuota } from "@/lib/ai/quota";
 import { generateJson } from "@/lib/ai/client";
-import { AI_MAX_TOKENS } from "@/lib/ai/config";
+import { AI_MAX_TOKENS, AI_MODELS } from "@/lib/ai/config";
 import {
   buildDoctorPrompt,
   DOCTOR_AI_SCHEMA,
   type DoctorAiResult,
 } from "@/lib/ai/prompts";
-import { resolvePlan } from "@/lib/plans";
 
 export const maxDuration = 60;
 
@@ -23,24 +22,6 @@ export async function POST(req: NextRequest) {
   } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan, plan_expires_at")
-    .eq("id", user.id)
-    .single();
-  const plan = resolvePlan(profile?.plan, profile?.plan_expires_at);
-
-  const limit = await checkMonthlyLimit(supabase, user.id, plan, "productDoctor");
-  if (!limit.allowed) {
-    return NextResponse.json(
-      {
-        error: `Batas Product Doctor plan gratis (${limit.limit}x/bulan) sudah terpakai. Upgrade ke Pro untuk audit tanpa batas.`,
-        limitReached: true,
-      },
-      { status: 402 },
-    );
   }
 
   let body: {
@@ -77,6 +58,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Cek + increment kuota SEBELUM panggil AI.
+  const quota = await checkAndIncrementQuota(user.id, "product_doctor");
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: quota.message,
+        quotaExceeded: true,
+        usage: { used: quota.currentUsage, max: quota.maxAllowed, plan: quota.plan },
+      },
+      { status: 402 },
+    );
+  }
+
   const content: Anthropic.ContentBlockParam[] = [];
   if (hasPhoto) {
     content.push({
@@ -103,12 +97,14 @@ export async function POST(req: NextRequest) {
   let ai: DoctorAiResult;
   try {
     ai = await generateJson<DoctorAiResult>({
+      model: AI_MODELS.productDoctor,
       content,
       schema: DOCTOR_AI_SCHEMA as unknown as Record<string, unknown>,
       maxTokens: AI_MAX_TOKENS,
     });
   } catch (err) {
     console.error("product-doctor AI error:", err);
+    await rollbackQuota(user.id, "product_doctor");
     return NextResponse.json(
       { error: "AI gagal mengaudit listing. Coba lagi sebentar." },
       { status: 502 },

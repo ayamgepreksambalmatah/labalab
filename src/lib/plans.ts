@@ -6,23 +6,14 @@ import type { Plan } from "@/types/database";
  * exceeded so the frontend can redirect to the upgrade page.
  */
 /**
- * Batas per plan. `savedProducts` dipakai untuk limit jumlah produk.
- * Kuota AI (sales/doctor per bulan) sedang dimigrasi ke tabel DB
- * `plan_limits` + `checkAndIncrementQuota`; key AI di sini akan dihapus
- * setelah semua route beralih.
+ * Batas jumlah produk tersimpan per plan. Kuota AI (Sales Analyzer, Product
+ * Doctor, dst) ada di tabel DB `plan_limits` + `checkAndIncrementQuota`
+ * (lib/ai/quota.ts) — bukan di sini.
  */
 export const PLAN_LIMITS = {
-  free: { salesAnalyzerPerMonth: 1, productDoctorPerMonth: 1, savedProducts: 3 },
-  pro: {
-    salesAnalyzerPerMonth: Infinity,
-    productDoctorPerMonth: Infinity,
-    savedProducts: Infinity,
-  },
-  max: {
-    salesAnalyzerPerMonth: Infinity,
-    productDoctorPerMonth: Infinity,
-    savedProducts: Infinity,
-  },
+  free: { savedProducts: 3 },
+  pro: { savedProducts: Infinity },
+  max: { savedProducts: Infinity },
 } as const satisfies Record<Plan, Record<string, number>>;
 
 export const PRO_PRICE_IDR = 129_000;

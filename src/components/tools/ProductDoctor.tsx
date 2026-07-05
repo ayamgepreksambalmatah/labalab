@@ -65,7 +65,7 @@ export function ProductDoctor() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setLimitReached(!!data.limitReached);
+        setLimitReached(!!data.quotaExceeded);
         setError(data.error || "Gagal mengaudit.");
         return;
       }
@@ -144,14 +144,17 @@ export function ProductDoctor() {
         </Field>
 
         {error && (
-          <p className="mb-3 rounded-[9px] border border-red/40 bg-red/10 px-3 py-2 text-[13px] text-red">
+          <div className="mb-3 rounded-[9px] border border-red/40 bg-red/10 px-3 py-2 text-[13px] text-red">
             {error}
             {limitReached && (
-              <span className="mt-1 block text-yellow">
-                Butuh plan Pro (pembayaran hadir di update berikutnya).
-              </span>
+              <a
+                href="/pricing"
+                className="mt-1.5 block font-semibold text-accent2 hover:underline"
+              >
+                Upgrade Sekarang →
+              </a>
             )}
-          </p>
+          </div>
         )}
 
         <button

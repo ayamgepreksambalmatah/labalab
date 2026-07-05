@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import type { Plan } from "@/types/database";
 
 declare global {
   interface Window {
@@ -19,21 +20,35 @@ declare global {
   }
 }
 
+const RANK: Record<Plan, number> = { free: 0, pro: 1, max: 2 };
+const LABEL: Record<"pro" | "max", string> = { pro: "Pro", max: "Max" };
+
 export function UpgradeButton({
+  plan,
+  currentPlan,
   isLoggedIn,
-  isPro,
 }: {
+  plan: "pro" | "max";
+  currentPlan: Plan;
   isLoggedIn: boolean;
-  isPro: boolean;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  if (isPro) {
+  // Plan yang sedang aktif.
+  if (currentPlan === plan) {
     return (
       <div className="rounded-[10px] border border-green/40 bg-green/10 px-4 py-3 text-center text-sm font-semibold text-green">
-        ✓ Kamu sudah Pro
+        ✓ Plan aktif kamu
+      </div>
+    );
+  }
+  // Sudah di plan lebih tinggi (mis. Max, lihat tombol Pro).
+  if (RANK[currentPlan] > RANK[plan]) {
+    return (
+      <div className="rounded-[10px] border border-border bg-surface2 px-4 py-3 text-center text-sm font-semibold text-muted">
+        Kamu sudah di plan lebih tinggi
       </div>
     );
   }
@@ -52,6 +67,8 @@ export function UpgradeButton({
     try {
       const res = await fetch("/api/payment/create-transaction", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (!res.ok || !data.token) {
@@ -79,7 +96,7 @@ export function UpgradeButton({
         disabled={loading}
         className="w-full rounded-[10px] bg-gradient-to-br from-accent to-accent2 px-4 py-3 font-display text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50"
       >
-        {loading ? "Memproses…" : "Upgrade ke Pro"}
+        {loading ? "Memproses…" : `Upgrade ke ${LABEL[plan]}`}
       </button>
       {error && <p className="mt-2 text-[12.5px] text-red">{error}</p>}
     </div>

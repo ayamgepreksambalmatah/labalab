@@ -31,7 +31,7 @@ export function SalesAnalyzer() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setLimitReached(!!data.limitReached);
+        setLimitReached(!!data.quotaExceeded);
         setError(data.error || "Gagal menganalisis.");
         setView("error");
         return;
@@ -76,18 +76,22 @@ export function SalesAnalyzer() {
         <div className="text-3xl">⚠️</div>
         <p className="mt-3 font-display font-bold">Tidak bisa diproses</p>
         <p className="mt-1.5 text-[13px] text-muted">{error}</p>
-        {limitReached && (
-          <p className="mt-2 text-[12px] text-yellow">
-            Fitur ini butuh plan Pro (pembayaran hadir di update berikutnya).
-          </p>
+        {limitReached ? (
+          <a
+            href="/pricing"
+            className="mt-5 inline-block rounded-[10px] bg-gradient-to-br from-accent to-accent2 px-5 py-2.5 font-display text-sm font-bold text-white hover:opacity-90"
+          >
+            Upgrade Sekarang
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setView("upload")}
+            className="mt-5 rounded-[10px] bg-gradient-to-br from-accent to-accent2 px-5 py-2.5 font-display text-sm font-bold text-white hover:opacity-90"
+          >
+            Coba Lagi
+          </button>
         )}
-        <button
-          type="button"
-          onClick={() => setView("upload")}
-          className="mt-5 rounded-[10px] bg-gradient-to-br from-accent to-accent2 px-5 py-2.5 font-display text-sm font-bold text-white hover:opacity-90"
-        >
-          Coba Lagi
-        </button>
       </div>
     );
   }

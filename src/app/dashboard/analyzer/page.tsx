@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
 import { SalesAnalyzer } from "@/components/tools/SalesAnalyzer";
+import { QuotaBar } from "@/components/tools/QuotaBar";
+import { createServerClient } from "@/lib/supabase/server";
+import { getUsage } from "@/lib/ai/quota";
 
 export const metadata: Metadata = {
   title: "Sales Analyzer",
   robots: { index: false, follow: false },
 };
 
-export default function AnalyzerPage() {
+export default async function AnalyzerPage() {
+  const supabase = await createServerClient();
+  const { data: claims } = await supabase.auth.getClaims();
+  const userId = claims?.claims?.sub;
+  const usage = userId ? await getUsage(userId, "sales_analyzer") : null;
+
   return (
     <div>
       <header className="mb-6">
@@ -18,6 +26,7 @@ export default function AnalyzerPage() {
           mana yang boncos.
         </p>
       </header>
+      {usage && <QuotaBar label="Sales Analyzer" used={usage.used} max={usage.max} />}
       <SalesAnalyzer />
     </div>
   );

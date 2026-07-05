@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
-import { checkMonthlyLimit } from "@/lib/ai/limits";
+import { checkAndIncrementQuota, rollbackQuota } from "@/lib/ai/quota";
 import { generateJson } from "@/lib/ai/client";
-import { AI_MAX_TOKENS } from "@/lib/ai/config";
-import { resolvePlan } from "@/lib/plans";
+import { AI_MAX_TOKENS, AI_MODELS } from "@/lib/ai/config";
 import { computeSalesAnalysis, type SalesProduct } from "@/lib/calc/sales";
 import {
   buildSalesPrompt,
@@ -36,24 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("plan, plan_expires_at")
-    .eq("id", user.id)
-    .single();
-  const plan = resolvePlan(profile?.plan, profile?.plan_expires_at);
-
-  const limit = await checkMonthlyLimit(supabase, user.id, plan, "salesAnalyzer");
-  if (!limit.allowed) {
-    return NextResponse.json(
-      {
-        error: `Batas Sales Analyzer plan gratis (${limit.limit}x/bulan) sudah terpakai. Upgrade ke Pro untuk analisis tanpa batas.`,
-        limitReached: true,
-      },
-      { status: 402 },
-    );
-  }
-
+  // Parse & validasi body dulu (murah) supaya request invalid tak makan kuota.
   let body: { products?: unknown; sourceLabel?: unknown };
   try {
     body = await req.json();
@@ -70,17 +52,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Cek + increment kuota SEBELUM panggil AI (biar request over-limit tak keluar biaya).
+  const quota = await checkAndIncrementQuota(user.id, "sales_analyzer");
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: quota.message,
+        quotaExceeded: true,
+        usage: { used: quota.currentUsage, max: quota.maxAllowed, plan: quota.plan },
+      },
+      { status: 402 },
+    );
+  }
+
   const analysis = computeSalesAnalysis(products);
 
   let ai: SalesAiResult;
   try {
     ai = await generateJson<SalesAiResult>({
+      model: AI_MODELS.salesAnalyzer,
       content: buildSalesPrompt(analysis, sourceLabel),
       schema: SALES_AI_SCHEMA as unknown as Record<string, unknown>,
       maxTokens: AI_MAX_TOKENS,
     });
   } catch (err) {
     console.error("sales-analyzer AI error:", err);
+    // AI gagal → kembalikan kuota yang tadi di-increment.
+    await rollbackQuota(user.id, "sales_analyzer");
     return NextResponse.json(
       { error: "AI gagal menyusun insight. Coba lagi sebentar." },
       { status: 502 },

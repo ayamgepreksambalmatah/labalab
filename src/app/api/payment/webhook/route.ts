@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
   const { data: sub } = await supabase
     .from("subscriptions")
-    .select("id, user_id, amount, status")
+    .select("id, user_id, amount, status, plan")
     .eq("midtrans_order_id", order_id)
     .single();
 
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     await supabase
       .from("profiles")
-      .update({ plan: "pro", plan_expires_at: periodEnd.toISOString() })
+      .update({ plan: sub.plan, plan_expires_at: periodEnd.toISOString() })
       .eq("id", sub.user_id);
   } else {
     await supabase
