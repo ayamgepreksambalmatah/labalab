@@ -1,10 +1,17 @@
 /**
- * Konfigurasi model AI terpusat (server-only). Ganti di sini untuk tuning
- * biaya vs kualitas. Default: Opus 4.8 tanpa extended thinking agar respons
- * cepat & hemat untuk tugas terstruktur (analisis + generasi listing).
+ * Config AI terpusat (server-only). Model routing per fitur untuk efisiensi
+ * biaya (spec model-routing §1): tugas ringan volume tinggi → Haiku;
+ * analisis/vision/copywriting → Sonnet.
  *
- * Kalau butuh analisis lebih dalam, aktifkan adaptive thinking:
- *   THINKING = { type: "adaptive" } dan naikkan MAX_TOKENS.
+ * Ubah di sini saja kalau ada model baru / perlu tuning ulang.
  */
-export const AI_MODEL = "claude-opus-4-8";
+export const AI_MODELS = {
+  csReply: "claude-haiku-4-5-20251001", // draft balasan pendek, volume tinggi → termurah
+  salesAnalyzer: "claude-sonnet-4-6", // reasoning pola & rekomendasi
+  productDoctor: "claude-sonnet-4-6", // reasoning + vision foto
+  listingGenerator: "claude-sonnet-4-6", // kualitas copywriting
+} as const;
+
+export type AiModel = (typeof AI_MODELS)[keyof typeof AI_MODELS];
+
 export const AI_MAX_TOKENS = 2048;

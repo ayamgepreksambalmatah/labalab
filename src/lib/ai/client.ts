@@ -19,21 +19,23 @@ export function getAnthropic(): Anthropic {
  * jadi tidak perlu regex/parsing rapuh seperti prototype.
  */
 export async function generateJson<T>({
+  model,
   system,
   content,
   schema,
   maxTokens,
 }: {
+  model?: string;
   system?: string;
   content: Anthropic.ContentBlockParam[] | string;
   schema: Record<string, unknown>;
   maxTokens: number;
 }): Promise<T> {
   const anthropic = getAnthropic();
-  const { AI_MODEL } = await import("@/lib/ai/config");
+  const { AI_MODELS } = await import("@/lib/ai/config");
 
   const message = await anthropic.messages.create({
-    model: AI_MODEL,
+    model: model ?? AI_MODELS.salesAnalyzer,
     max_tokens: maxTokens,
     ...(system ? { system } : {}),
     messages: [{ role: "user", content }],

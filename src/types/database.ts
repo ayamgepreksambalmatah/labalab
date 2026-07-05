@@ -6,7 +6,7 @@
  *   npx supabase gen types typescript --project-id <ref> > src/types/database.ts
  */
 
-export type Plan = "free" | "pro";
+export type Plan = "free" | "pro" | "max";
 export type Platform = "shopee" | "tokopedia" | "tiktok";
 export type SubscriptionStatus = "pending" | "paid" | "failed" | "expired";
 
@@ -223,9 +223,65 @@ export interface Database {
         >;
         Relationships: [];
       };
+      plan_limits: {
+        Row: {
+          plan: string;
+          sales_analyzer_per_month: number;
+          product_doctor_per_month: number;
+          cs_reply_per_month: number;
+          listing_generator_per_month: number;
+          updated_at: string;
+        };
+        Insert: {
+          plan: string;
+          sales_analyzer_per_month: number;
+          product_doctor_per_month: number;
+          cs_reply_per_month: number;
+          listing_generator_per_month?: number;
+          updated_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["plan_limits"]["Insert"]
+        >;
+        Relationships: [];
+      };
+      usage_logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          feature: string;
+          periode_bulan: string;
+          jumlah_pemakaian: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          feature: string;
+          periode_bulan: string;
+          jumlah_pemakaian?: number;
+          updated_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["usage_logs"]["Insert"]>;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
-    Functions: Record<never, never>;
+    Functions: {
+      increment_usage_if_allowed: {
+        Args: {
+          p_user_id: string;
+          p_feature: string;
+          p_period: string;
+          p_max: number;
+        };
+        Returns: number;
+      };
+      decrement_usage: {
+        Args: { p_user_id: string; p_feature: string; p_period: string };
+        Returns: undefined;
+      };
+    };
     Enums: Record<never, never>;
   };
 }
