@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { KATEGORI_OPTIONS } from "@/lib/calc/profit";
 import type { DoctorAiResult } from "@/lib/ai/prompts";
 import { Card, Field, MoneyInput, SelectInput, TextInput } from "@/components/tools/controls";
@@ -24,6 +25,7 @@ export function ProductDoctor() {
   const [limitReached, setLimitReached] = useState(false);
   const [result, setResult] = useState<DoctorAiResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
+  const router = useRouter();
 
   function handlePhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -70,6 +72,7 @@ export function ProductDoctor() {
         return;
       }
       setResult(data.ai);
+      router.refresh(); // update QuotaBar (server) dengan pemakaian terbaru
     } catch {
       setError("Gagal menghubungi server. Coba lagi ya.");
     } finally {

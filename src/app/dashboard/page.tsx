@@ -47,6 +47,13 @@ const TOOLS = [
     desc: "Audit listing produk pakai AI.",
     ready: true,
   },
+  {
+    href: "/dashboard/listing",
+    icon: "✍️",
+    title: "Listing Generator",
+    desc: "Buat judul, deskripsi & kata kunci produk otomatis.",
+    ready: true,
+  },
 ];
 
 export default async function DashboardPage({

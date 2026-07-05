@@ -116,6 +116,62 @@ export const DOCTOR_AI_SCHEMA = {
   ],
 } as const;
 
+/* ============================ LISTING GENERATOR ============================ */
+
+export type ListingAiResult = {
+  judul: string;
+  deskripsi: string;
+  poinKeunggulan: string[];
+  keywords: string[];
+};
+
+export const LISTING_AI_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    judul: {
+      type: "string",
+      description:
+        "1 judul listing yang dioptimasi untuk pencarian marketplace, maksimal 70 karakter, sertakan kata kunci utama.",
+    },
+    deskripsi: {
+      type: "string",
+      description:
+        "Deskripsi produk persuasif 120-200 kata dengan emoji relevan, struktur rapi (pembuka menarik, keunggulan, call-to-action).",
+    },
+    poinKeunggulan: {
+      type: "array",
+      description: "3-5 bullet point keunggulan produk, singkat & spesifik.",
+      items: { type: "string" },
+    },
+    keywords: {
+      type: "array",
+      description: "5-8 kata kunci/hashtag pencarian yang relevan (tanpa tanda #).",
+      items: { type: "string" },
+    },
+  },
+  required: ["judul", "deskripsi", "poinKeunggulan", "keywords"],
+} as const;
+
+export function buildListingPrompt(input: {
+  nama: string;
+  kategori: string;
+  harga: string;
+  keunggulan: string;
+  bahan: string;
+}): string {
+  return `Kamu adalah copywriter e-commerce Indonesia yang jago bikin listing produk konversi tinggi untuk Shopee/Tokopedia/TikTok Shop.
+
+Buat listing yang dioptimasi untuk produk ini:
+- Nama/produk: ${input.nama}
+- Kategori: ${input.kategori}
+- Harga: ${input.harga ? "Rp " + input.harga : "(tidak diisi)"}
+- Keunggulan/detail: ${input.keunggulan || "(tidak diisi — simpulkan dari nama & kategori)"}
+- Bahan/material: ${input.bahan || "(tidak diisi)"}
+
+Bahasa Indonesia, gaya persuasif tapi tidak lebay. Isi field "judul" (maks 70 karakter), "deskripsi", "poinKeunggulan" (3-5 item), dan "keywords" (5-8 item) sesuai skema.`;
+}
+
 export function buildDoctorPrompt(input: {
   judul: string;
   deskripsi: string;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { fmt } from "@/lib/format";
 import { DEMO_SALES_PRODUCTS, type SalesAnalysis, type SalesProduct } from "@/lib/calc/sales";
 import { parseSalesFile } from "@/lib/parse/salesFile";
@@ -18,6 +19,7 @@ export function SalesAnalyzer() {
   const [analysis, setAnalysis] = useState<SalesAnalysis | null>(null);
   const [ai, setAi] = useState<SalesAiResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   async function run(products: SalesProduct[], sourceLabel: string) {
     setView("loading");
@@ -39,6 +41,7 @@ export function SalesAnalyzer() {
       setAnalysis(data.analysis);
       setAi(data.ai);
       setView("result");
+      router.refresh(); // update QuotaBar (server) dengan pemakaian terbaru
     } catch {
       setError("Gagal menghubungi server. Coba lagi ya.");
       setView("error");

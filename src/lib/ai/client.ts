@@ -53,3 +53,36 @@ export async function generateJson<T>({
 
   return JSON.parse(text) as T;
 }
+
+/** Panggil model dan kembalikan teks bebas (untuk draft balasan CS, dll). */
+export async function generateText({
+  model,
+  system,
+  content,
+  maxTokens,
+}: {
+  model?: string;
+  system?: string;
+  content: Anthropic.ContentBlockParam[] | string;
+  maxTokens: number;
+}): Promise<string> {
+  const anthropic = getAnthropic();
+  const { AI_MODELS } = await import("@/lib/ai/config");
+
+  const message = await anthropic.messages.create({
+    model: model ?? AI_MODELS.csReply,
+    max_tokens: maxTokens,
+    ...(system ? { system } : {}),
+    messages: [{ role: "user", content }],
+  });
+
+  if (message.stop_reason === "refusal") {
+    throw new Error("Permintaan ditolak oleh filter keamanan AI.");
+  }
+
+  return message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("")
+    .trim();
+}

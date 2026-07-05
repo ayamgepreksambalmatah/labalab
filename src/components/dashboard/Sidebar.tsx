@@ -27,6 +27,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
       { href: "/dashboard/analyzer", icon: "📊", label: "Sales Analyzer", ready: true },
       { href: "/dashboard/promo", icon: "🔥", label: "Promo Simulator", ready: true },
       { href: "/dashboard/doctor", icon: "🩺", label: "Product Doctor", ready: true },
+      { href: "/dashboard/listing", icon: "✍️", label: "Listing Generator", ready: true },
     ],
   },
 ];
