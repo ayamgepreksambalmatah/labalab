@@ -19,10 +19,12 @@ export default async function DoctorPage() {
     <div>
       <header className="mb-6">
         <h1 className="font-display text-2xl font-extrabold tracking-tight">
-          🩺 Product Doctor
+          🩺 Product Doctor — Audit Listing, Kamu yang Putuskan
         </h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Audit listing produk kamu — cari tahu kenapa konversinya rendah.
+        <p className="mt-1 text-[13px] leading-relaxed text-muted">
+          Beda dari fitur AI marketplace yang bisa ubah listing kamu otomatis
+          tanpa izin — LabaLab cuma kasih rekomendasi. Kamu yang klik terapkan
+          atau tidak.
         </p>
       </header>
       {usage && <QuotaBar label="Product Doctor" used={usage.used} max={usage.max} />}

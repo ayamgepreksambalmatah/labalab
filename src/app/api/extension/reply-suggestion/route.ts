@@ -5,6 +5,7 @@ import { checkAndIncrementQuota, rollbackQuota } from "@/lib/ai/quota";
 import { generateText } from "@/lib/ai/client";
 import { AI_MODELS } from "@/lib/ai/config";
 import type { FaqItem } from "@/lib/products/queries";
+import { productKnowledgeLines, type AtributKhusus } from "@/lib/products/knowledge";
 
 export const maxDuration = 30;
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     const { data: p } = await admin
       .from("products")
       .select(
-        "nama, harga, stok, bahan, garansi, cara_perawatan, ukuran_tersedia, deskripsi, faq",
+        "nama, harga, stok, deskripsi, faq, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, garansi, cara_perawatan, bahan, ukuran_tersedia",
       )
       .eq("id", productId)
       .eq("user_id", user.id) // hanya produk milik user ini
@@ -78,12 +79,11 @@ export async function POST(req: NextRequest) {
         `Produk: ${p.nama}`,
         p.harga != null && `Harga: Rp ${p.harga}`,
         p.stok != null && `Stok: ${p.stok}`,
-        p.bahan && `Bahan: ${p.bahan}`,
-        p.ukuran_tersedia &&
-          p.ukuran_tersedia.length > 0 &&
-          `Ukuran: ${p.ukuran_tersedia.join(", ")}`,
-        p.garansi && `Garansi: ${p.garansi}`,
-        p.cara_perawatan && `Perawatan: ${p.cara_perawatan}`,
+        // Knowledge universal + atribut_khusus dinamis (+ fallback field legacy).
+        ...productKnowledgeLines({
+          ...p,
+          atribut_khusus: p.atribut_khusus as AtributKhusus | null,
+        }),
         p.deskripsi && `Deskripsi: ${p.deskripsi}`,
         faq && `FAQ: ${faq}`,
       ]

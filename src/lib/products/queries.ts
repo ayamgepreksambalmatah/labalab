@@ -1,6 +1,7 @@
 import { createServerClient } from "@/lib/supabase/server";
 import type { Platform } from "@/types/database";
 import type { Kategori } from "@/lib/calc/profit";
+import type { AtributKhusus } from "@/lib/products/knowledge";
 
 export type FaqItem = { question: string; answer: string };
 
@@ -12,18 +13,24 @@ export type Product = {
   kategori: Kategori;
   harga: number;
   modal: number;
-  // Detail lengkap (Product Knowledge)
+  // Detail lengkap (Product Knowledge universal)
   stok: number | null;
-  ukuran_tersedia: string[] | null;
   faq: FaqItem[] | null;
+  deskripsi: string | null;
+  masa_berlaku: string | null;
+  sertifikasi: string | null;
+  kondisi_pengiriman: string | null;
+  catatan_tambahan: string | null;
+  atribut_khusus: AtributKhusus | null;
+  // Legacy (backward compat — tetap dibaca, tidak lagi diedit terpisah di UI)
   garansi: string | null;
   cara_perawatan: string | null;
   bahan: string | null;
-  deskripsi: string | null;
+  ukuran_tersedia: string[] | null;
 };
 
 const COLUMNS =
-  "id, nama, platform, kategori, harga, modal, stok, ukuran_tersedia, faq, garansi, cara_perawatan, bahan, deskripsi";
+  "id, nama, platform, kategori, harga, modal, stok, faq, deskripsi, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, garansi, cara_perawatan, bahan, ukuran_tersedia";
 
 /** Ambil semua produk milik user yang login (RLS membatasi ke user_id sendiri). */
 export async function getProducts(): Promise<Product[]> {

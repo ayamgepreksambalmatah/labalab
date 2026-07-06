@@ -118,40 +118,79 @@ export const DOCTOR_AI_SCHEMA = {
 
 /* ============================ LISTING GENERATOR ============================ */
 
-export type ListingAiResult = {
+export type ListingPlatform = "shopee" | "tokopedia" | "tiktok";
+
+export type ListingVersion = {
+  platform: ListingPlatform;
   judul: string;
   deskripsi: string;
   poinKeunggulan: string[];
   keywords: string[];
 };
 
+export type ListingAiResult = {
+  versions: ListingVersion[];
+};
+
 export const LISTING_AI_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
-    judul: {
-      type: "string",
-      description:
-        "1 judul listing yang dioptimasi untuk pencarian marketplace, maksimal 70 karakter, sertakan kata kunci utama.",
-    },
-    deskripsi: {
-      type: "string",
-      description:
-        "Deskripsi produk persuasif 120-200 kata dengan emoji relevan, struktur rapi (pembuka menarik, keunggulan, call-to-action).",
-    },
-    poinKeunggulan: {
+    versions: {
       type: "array",
-      description: "3-5 bullet point keunggulan produk, singkat & spesifik.",
-      items: { type: "string" },
-    },
-    keywords: {
-      type: "array",
-      description: "5-8 kata kunci/hashtag pencarian yang relevan (tanpa tanda #).",
-      items: { type: "string" },
+      description:
+        "Satu objek per platform yang diminta. Judul & deskripsi WAJIB berbeda sesuai gaya tiap platform, bukan hasil copy-paste.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          platform: {
+            type: "string",
+            enum: ["shopee", "tokopedia", "tiktok"],
+            description: "Identitas platform untuk versi ini.",
+          },
+          judul: {
+            type: "string",
+            description:
+              "Judul listing dioptimasi untuk platform ini, maksimal 70 karakter, sertakan kata kunci utama.",
+          },
+          deskripsi: {
+            type: "string",
+            description:
+              "Deskripsi produk persuasif dengan emoji relevan, struktur rapi (pembuka menarik, keunggulan, call-to-action), disesuaikan gaya platform.",
+          },
+          poinKeunggulan: {
+            type: "array",
+            description: "3-5 bullet point keunggulan produk, singkat & spesifik.",
+            items: { type: "string" },
+          },
+          keywords: {
+            type: "array",
+            description: "5-8 kata kunci pencarian relevan (tanpa tanda #).",
+            items: { type: "string" },
+          },
+        },
+        required: ["platform", "judul", "deskripsi", "poinKeunggulan", "keywords"],
+      },
     },
   },
-  required: ["judul", "deskripsi", "poinKeunggulan", "keywords"],
+  required: ["versions"],
 } as const;
+
+const LISTING_PLATFORM_STYLE: Record<ListingPlatform, string> = {
+  shopee:
+    "Judul padat dengan keyword utama di depan (maks 70 karakter), keywords banyak & spesifik untuk mesin pencari Shopee.",
+  tokopedia:
+    "Deskripsi lengkap, informatif, dan terstruktur — spesifikasi jelas, cocok pembeli yang teliti.",
+  tiktok:
+    "Nada santai dan natural, hook menarik di awal, cocok dipakai untuk konten video/live TikTok Shop.",
+};
+
+const LISTING_PLATFORM_LABEL: Record<ListingPlatform, string> = {
+  shopee: "Shopee",
+  tokopedia: "Tokopedia",
+  tiktok: "TikTok Shop",
+};
 
 export function buildListingPrompt(input: {
   nama: string;
@@ -159,17 +198,29 @@ export function buildListingPrompt(input: {
   harga: string;
   keunggulan: string;
   bahan: string;
+  platforms: ListingPlatform[];
 }): string {
+  const perPlatform = input.platforms
+    .map(
+      (p) =>
+        `- ${LISTING_PLATFORM_LABEL[p]} (platform: "${p}"): ${LISTING_PLATFORM_STYLE[p]}`,
+    )
+    .join("\n");
+  const platformValues = input.platforms.map((p) => `"${p}"`).join(", ");
+
   return `Kamu adalah copywriter e-commerce Indonesia yang jago bikin listing produk konversi tinggi untuk Shopee/Tokopedia/TikTok Shop.
 
-Buat listing yang dioptimasi untuk produk ini:
+Data produk (SAMA untuk semua platform):
 - Nama/produk: ${input.nama}
 - Kategori: ${input.kategori}
 - Harga: ${input.harga ? "Rp " + input.harga : "(tidak diisi)"}
 - Keunggulan/detail: ${input.keunggulan || "(tidak diisi — simpulkan dari nama & kategori)"}
 - Bahan/material: ${input.bahan || "(tidak diisi)"}
 
-Bahasa Indonesia, gaya persuasif tapi tidak lebay. Isi field "judul" (maks 70 karakter), "deskripsi", "poinKeunggulan" (3-5 item), dan "keywords" (5-8 item) sesuai skema.`;
+Buat listing TERPISAH untuk setiap platform berikut, pakai data yang sama tapi gaya penulisan disesuaikan:
+${perPlatform}
+
+Bahasa Indonesia, persuasif tapi tidak lebay. Kembalikan array "versions" berisi tepat satu objek untuk tiap platform di atas (nilai "platform" persis: ${platformValues}), masing-masing dengan "judul" (maks 70 karakter), "deskripsi", "poinKeunggulan" (3-5 item), dan "keywords" (5-8 item) sesuai skema.`;
 }
 
 export function buildDoctorPrompt(input: {

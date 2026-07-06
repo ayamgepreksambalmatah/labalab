@@ -7,9 +7,12 @@ import {
   buildListingPrompt,
   LISTING_AI_SCHEMA,
   type ListingAiResult,
+  type ListingPlatform,
 } from "@/lib/ai/prompts";
 
 export const maxDuration = 60;
+
+const ALL_PLATFORMS: ListingPlatform[] = ["shopee", "tokopedia", "tiktok"];
 
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient();
@@ -26,6 +29,7 @@ export async function POST(req: NextRequest) {
     harga?: unknown;
     keunggulan?: unknown;
     bahan?: unknown;
+    platforms?: unknown;
   };
   try {
     body = await req.json();
@@ -38,6 +42,13 @@ export async function POST(req: NextRequest) {
   const harga = String(body.harga ?? "").trim().slice(0, 30);
   const keunggulan = String(body.keunggulan ?? "").trim().slice(0, 2000);
   const bahan = String(body.bahan ?? "").trim().slice(0, 300);
+
+  // Platform terpilih (default semua). Jaga urutan & buang yang tak valid/duplikat.
+  const requested = Array.isArray(body.platforms)
+    ? body.platforms.map((p) => String(p))
+    : [];
+  const platforms = ALL_PLATFORMS.filter((p) => requested.includes(p));
+  const finalPlatforms = platforms.length > 0 ? platforms : ALL_PLATFORMS;
 
   if (!nama) {
     return NextResponse.json(
@@ -63,7 +74,14 @@ export async function POST(req: NextRequest) {
   try {
     ai = await generateJson<ListingAiResult>({
       model: AI_MODELS.listingGenerator,
-      content: buildListingPrompt({ nama, kategori, harga, keunggulan, bahan }),
+      content: buildListingPrompt({
+        nama,
+        kategori,
+        harga,
+        keunggulan,
+        bahan,
+        platforms: finalPlatforms,
+      }),
       schema: LISTING_AI_SCHEMA as unknown as Record<string, unknown>,
       maxTokens: AI_MAX_TOKENS,
     });

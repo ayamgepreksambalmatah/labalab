@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { KATEGORI_OPTIONS } from "@/lib/calc/profit";
 import type { Product } from "@/lib/products/queries";
+import { productKnowledgeLines } from "@/lib/products/knowledge";
+import type { ListingPlatform } from "@/lib/ai/prompts";
 import type { ListingAiResult } from "@/lib/ai/prompts";
 import {
   Card,
@@ -15,6 +17,12 @@ import {
 } from "@/components/tools/controls";
 import { ProductPicker } from "@/components/tools/ProductPicker";
 
+const PLATFORM_CHOICES: { value: ListingPlatform; label: string; hint: string }[] = [
+  { value: "shopee", label: "🟠 Shopee", hint: "judul padat keyword" },
+  { value: "tokopedia", label: "🟢 Tokopedia", hint: "deskripsi lengkap & informatif" },
+  { value: "tiktok", label: "🎵 TikTok Shop", hint: "nada santai, cocok video" },
+];
+
 export function ListingGenerator({ products = [] }: { products?: Product[] }) {
   const router = useRouter();
   const [picked, setPicked] = useState("");
@@ -23,11 +31,17 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
   const [harga, setHarga] = useState(0);
   const [keunggulan, setKeunggulan] = useState("");
   const [bahan, setBahan] = useState("");
+  const [platforms, setPlatforms] = useState<Record<ListingPlatform, boolean>>({
+    shopee: true,
+    tokopedia: true,
+    tiktok: true,
+  });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [limitReached, setLimitReached] = useState(false);
   const [result, setResult] = useState<ListingAiResult | null>(null);
+  const [activePlatform, setActivePlatform] = useState<ListingPlatform>("shopee");
   const [copied, setCopied] = useState<string | null>(null);
 
   function loadFromProduct(p: Product | null) {
@@ -37,7 +51,12 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
     setKategori(p.kategori);
     setHarga(p.harga);
     setBahan(p.bahan ?? "");
-    if (p.deskripsi) setKeunggulan(p.deskripsi);
+    // Isi "keunggulan" dari deskripsi + knowledge universal (atribut khusus dll)
+    // supaya AI listing paham detail produk apa pun kategorinya.
+    const enriched = [p.deskripsi ?? "", ...productKnowledgeLines(p)]
+      .filter(Boolean)
+      .join("\n");
+    if (enriched) setKeunggulan(enriched);
   }
 
   async function generate() {
@@ -45,6 +64,13 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
     setLimitReached(false);
     if (!nama.trim()) {
       setError("Isi minimal nama produk.");
+      return;
+    }
+    const selected = PLATFORM_CHOICES.filter((p) => platforms[p.value]).map(
+      (p) => p.value,
+    );
+    if (selected.length === 0) {
+      setError("Pilih minimal satu platform.");
       return;
     }
     setLoading(true);
@@ -59,6 +85,7 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
           harga: harga ? String(harga) : "",
           keunggulan,
           bahan,
+          platforms: selected,
         }),
       });
       const data = await res.json();
@@ -68,6 +95,7 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
         return;
       }
       setResult(data.ai);
+      setActivePlatform(data.ai?.versions?.[0]?.platform ?? selected[0]);
       router.refresh(); // update QuotaBar
     } catch {
       setError("Gagal menghubungi server. Coba lagi ya.");
@@ -76,12 +104,20 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
     }
   }
 
+  function togglePlatform(p: ListingPlatform) {
+    setPlatforms((prev) => ({ ...prev, [p]: !prev[p] }));
+  }
+
   function copy(key: string, text: string) {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(key);
       setTimeout(() => setCopied(null), 1500);
     });
   }
+
+  const versions = result?.versions ?? [];
+  const activeVersion =
+    versions.find((v) => v.platform === activePlatform) ?? versions[0] ?? null;
 
   return (
     <div className="grid items-start gap-6 lg:grid-cols-[400px_1fr]">
@@ -110,6 +146,29 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
             rows={3}
           />
         </Field>
+
+        <div className="mb-4">
+          <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-muted">
+            Generate untuk Platform
+          </label>
+          <div className="space-y-1.5">
+            {PLATFORM_CHOICES.map((p) => (
+              <label
+                key={p.value}
+                className="flex cursor-pointer items-center gap-2.5 rounded-[9px] border border-border bg-surface2 px-3 py-2 text-[13px] has-[:checked]:border-accent/50 has-[:checked]:bg-accent/5"
+              >
+                <input
+                  type="checkbox"
+                  checked={platforms[p.value]}
+                  onChange={() => togglePlatform(p.value)}
+                  className="accent-accent"
+                />
+                <span className="font-semibold">{p.label}</span>
+                <span className="text-[11.5px] text-muted">· {p.hint}</span>
+              </label>
+            ))}
+          </div>
+        </div>
 
         {error && (
           <div className="mb-3 rounded-[9px] border border-red/40 bg-red/10 px-3 py-2 text-[13px] text-red">
@@ -154,28 +213,49 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
           </div>
         )}
 
-        {result && (
+        {activeVersion && (
           <>
+            {/* Tab per platform */}
+            {versions.length > 1 && (
+              <div className="mb-4 flex flex-wrap gap-1 rounded-[10px] border border-border bg-surface2 p-1">
+                {versions.map((v) => (
+                  <button
+                    key={v.platform}
+                    type="button"
+                    onClick={() => setActivePlatform(v.platform)}
+                    className={`rounded-md px-3 py-1.5 text-[12.5px] font-semibold transition-colors ${
+                      activeVersion.platform === v.platform
+                        ? "bg-surface text-accent2"
+                        : "text-muted hover:text-text"
+                    }`}
+                  >
+                    {PLATFORM_CHOICES.find((c) => c.value === v.platform)?.label ??
+                      v.platform}
+                  </button>
+                ))}
+              </div>
+            )}
+
             <Block
               title="Judul"
               icon="🏷️"
-              text={result.judul}
-              copyKey="judul"
+              text={activeVersion.judul}
+              copyKey={`judul-${activeVersion.platform}`}
               copied={copied}
               onCopy={copy}
             />
             <Block
               title="Deskripsi"
               icon="📝"
-              text={result.deskripsi}
-              copyKey="deskripsi"
+              text={activeVersion.deskripsi}
+              copyKey={`deskripsi-${activeVersion.platform}`}
               copied={copied}
               onCopy={copy}
               multiline
             />
             <Card title="Poin Keunggulan" icon="✅">
               <ul className="space-y-2">
-                {result.poinKeunggulan.map((p, i) => (
+                {activeVersion.poinKeunggulan.map((p, i) => (
                   <li key={i} className="text-[13.5px] leading-relaxed text-text/90">
                     ✓ {p}
                   </li>
@@ -184,7 +264,7 @@ export function ListingGenerator({ products = [] }: { products?: Product[] }) {
             </Card>
             <Card title="Kata Kunci" icon="🔎">
               <div className="flex flex-wrap gap-2">
-                {result.keywords.map((k, i) => (
+                {activeVersion.keywords.map((k, i) => (
                   <span
                     key={i}
                     className="rounded-full border border-border bg-surface2 px-2.5 py-1 text-[12px] text-accent2"

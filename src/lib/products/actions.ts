@@ -6,6 +6,7 @@ import { PLAN_LIMITS, resolvePlan } from "@/lib/plans";
 import type { Platform } from "@/types/database";
 import type { Kategori } from "@/lib/calc/profit";
 import type { FaqItem } from "@/lib/products/queries";
+import type { AtributKhusus } from "@/lib/products/knowledge";
 
 export type ProductInput = {
   nama: string;
@@ -13,15 +14,18 @@ export type ProductInput = {
   kategori: Kategori;
   harga: number;
   modal: number;
-  // Detail lengkap (opsional — hanya diikutkan kalau di-set)
+  // Detail lengkap universal (opsional — hanya diikutkan kalau di-set).
+  // Field legacy (ukuran_tersedia/bahan/cara_perawatan) sengaja tidak ditulis
+  // dari form baru; data lamanya tetap utuh di DB (backward compatibility).
   detail?: {
     stok: number | null;
-    ukuran_tersedia: string[] | null;
     faq: FaqItem[] | null;
-    garansi: string | null;
-    cara_perawatan: string | null;
-    bahan: string | null;
     deskripsi: string | null;
+    masa_berlaku: string | null;
+    sertifikasi: string | null;
+    kondisi_pengiriman: string | null;
+    catatan_tambahan: string | null;
+    atribut_khusus: AtributKhusus | null;
   };
 };
 

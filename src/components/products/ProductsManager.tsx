@@ -10,6 +10,8 @@ import {
   PLATFORM_OPTIONS,
   type Kategori,
 } from "@/lib/calc/profit";
+import { suggestionsFor } from "@/lib/products/category-attribute-suggestions";
+import type { AtributKhusus } from "@/lib/products/knowledge";
 import { fmt } from "@/lib/format";
 import { PLAN_LIMITS } from "@/lib/plans";
 import {
@@ -40,6 +42,8 @@ function marginOf(p: Product) {
   return { profit, margin };
 }
 
+type AtributRow = { key: string; value: string; placeholder?: string };
+
 type FormState = {
   nama: string;
   platform: Platform;
@@ -47,13 +51,23 @@ type FormState = {
   harga: number;
   modal: number;
   stok: number | "";
-  ukuranText: string;
-  bahan: string;
-  garansi: string;
-  caraPerawatan: string;
+  masaBerlaku: string;
+  sertifikasi: string;
+  kondisiPengiriman: string;
   deskripsi: string;
+  catatanTambahan: string;
+  atribut: AtributRow[];
   faq: FaqItem[];
 };
+
+/** Baris atribut awal (saran per kategori, nilai kosong + contoh placeholder). */
+function seedAtribut(kategori: Kategori): AtributRow[] {
+  return suggestionsFor(kategori).map((s) => ({
+    key: s.label,
+    value: "",
+    placeholder: s.example,
+  }));
+}
 
 const emptyForm: FormState = {
   nama: "",
@@ -62,15 +76,23 @@ const emptyForm: FormState = {
   harga: 0,
   modal: 0,
   stok: "",
-  ukuranText: "",
-  bahan: "",
-  garansi: "",
-  caraPerawatan: "",
+  masaBerlaku: "",
+  sertifikasi: "",
+  kondisiPengiriman: "",
   deskripsi: "",
+  catatanTambahan: "",
+  atribut: seedAtribut("fashion"),
   faq: [],
 };
 
 function productToForm(p: Product): FormState {
+  const atribut: AtributRow[] = p.atribut_khusus
+    ? Object.entries(p.atribut_khusus).map(([key, value]) => ({
+        key,
+        value: Array.isArray(value) ? value.join(", ") : String(value),
+      }))
+    : seedAtribut(p.kategori);
+
   return {
     nama: p.nama,
     platform: p.platform,
@@ -78,21 +100,32 @@ function productToForm(p: Product): FormState {
     harga: p.harga,
     modal: p.modal,
     stok: p.stok ?? "",
-    ukuranText: (p.ukuran_tersedia ?? []).join(", "),
-    bahan: p.bahan ?? "",
-    garansi: p.garansi ?? "",
-    caraPerawatan: p.cara_perawatan ?? "",
+    // Fallback ke field legacy supaya data lama tetap muncul di field universal.
+    masaBerlaku: p.masa_berlaku ?? p.garansi ?? "",
+    sertifikasi: p.sertifikasi ?? "",
+    kondisiPengiriman: p.kondisi_pengiriman ?? "",
     deskripsi: p.deskripsi ?? "",
+    catatanTambahan: p.catatan_tambahan ?? p.cara_perawatan ?? "",
+    atribut: atribut.length ? atribut : seedAtribut(p.kategori),
     faq: p.faq ?? [],
   };
 }
 
 function formToInput(form: FormState): ProductInput {
-  const ukuran = form.ukuranText
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
   const faq = form.faq.filter((q) => q.question.trim() || q.answer.trim());
+
+  const atributObj: AtributKhusus = {};
+  for (const row of form.atribut) {
+    const key = row.key.trim();
+    const value = row.value.trim();
+    if (!key || !value) continue;
+    const parts = value
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    atributObj[key] = parts.length > 1 ? parts : value;
+  }
+
   return {
     nama: form.nama,
     platform: form.platform,
@@ -101,12 +134,13 @@ function formToInput(form: FormState): ProductInput {
     modal: form.modal,
     detail: {
       stok: form.stok === "" ? null : Number(form.stok),
-      ukuran_tersedia: ukuran.length ? ukuran : null,
       faq: faq.length ? faq : null,
-      garansi: form.garansi.trim() || null,
-      cara_perawatan: form.caraPerawatan.trim() || null,
-      bahan: form.bahan.trim() || null,
       deskripsi: form.deskripsi.trim() || null,
+      masa_berlaku: form.masaBerlaku.trim() || null,
+      sertifikasi: form.sertifikasi.trim() || null,
+      kondisi_pengiriman: form.kondisiPengiriman.trim() || null,
+      catatan_tambahan: form.catatanTambahan.trim() || null,
+      atribut_khusus: Object.keys(atributObj).length ? atributObj : null,
     },
   };
 }
@@ -180,12 +214,32 @@ export function ProductsManager({
     });
   }
 
+  // Ganti kategori: kalau atribut belum diisi user (semua kosong), seed ulang
+  // saran sesuai kategori baru. Kalau sudah ada isian, jangan timpa.
+  function changeKategori(kategori: Kategori) {
+    setForm((f) => {
+      const untouched = f.atribut.every((r) => !r.value.trim());
+      return { ...f, kategori, atribut: untouched ? seedAtribut(kategori) : f.atribut };
+    });
+  }
+
+  // Atribut khusus helpers
+  const addAtribut = () =>
+    set({ atribut: [...form.atribut, { key: "", value: "" }] });
+  const setAtribut = (i: number, patch: Partial<AtributRow>) =>
+    set({ atribut: form.atribut.map((r, idx) => (idx === i ? { ...r, ...patch } : r)) });
+  const removeAtribut = (i: number) =>
+    set({ atribut: form.atribut.filter((_, idx) => idx !== i) });
+
   // FAQ helpers
   const addFaq = () => set({ faq: [...form.faq, { question: "", answer: "" }] });
   const setFaq = (i: number, patch: Partial<FaqItem>) =>
     set({ faq: form.faq.map((q, idx) => (idx === i ? { ...q, ...patch } : q)) });
   const removeFaq = (i: number) =>
     set({ faq: form.faq.filter((_, idx) => idx !== i) });
+
+  const kategoriLabel =
+    KATEGORI_OPTIONS.find((o) => o.value === form.kategori)?.label ?? form.kategori;
 
   return (
     <div>
@@ -237,7 +291,7 @@ export function ProductsManager({
                 <Field label="Kategori">
                   <SelectInput
                     value={form.kategori}
-                    onChange={(v) => set({ kategori: v })}
+                    onChange={(v) => changeKategori(v)}
                     options={KATEGORI_OPTIONS}
                   />
                 </Field>
@@ -269,42 +323,97 @@ export function ProductsManager({
                     placeholder="100"
                   />
                 </Field>
-                <Field label="Bahan">
+                <Field label="Masa Berlaku / Garansi">
                   <TextInput
-                    value={form.bahan}
-                    onChange={(v) => set({ bahan: v })}
-                    placeholder="Cotton Combed 30s"
+                    value={form.masaBerlaku}
+                    onChange={(v) => set({ masaBerlaku: v })}
+                    placeholder="1 thn garansi / 3 hari di kulkas"
                   />
                 </Field>
               </div>
-              <Field label="Ukuran Tersedia" hint="pisah dengan koma">
+              <Field label="Sertifikasi" hint="opsional">
                 <TextInput
-                  value={form.ukuranText}
-                  onChange={(v) => set({ ukuranText: v })}
-                  placeholder="S, M, L, XL"
+                  value={form.sertifikasi}
+                  onChange={(v) => set({ sertifikasi: v })}
+                  placeholder="Halal MUI, BPOM, SNI"
                 />
               </Field>
-              <Field label="Garansi">
+              <Field label="Kondisi Pengiriman">
                 <TextInput
-                  value={form.garansi}
-                  onChange={(v) => set({ garansi: v })}
-                  placeholder="Garansi tukar 7 hari"
+                  value={form.kondisiPengiriman}
+                  onChange={(v) => set({ kondisiPengiriman: v })}
+                  placeholder="Perlu ice pack / mudah pecah"
                 />
               </Field>
-              <Field label="Cara Perawatan">
-                <Textarea
-                  value={form.caraPerawatan}
-                  onChange={(v) => set({ caraPerawatan: v })}
-                  placeholder="Cuci dengan air dingin, jangan pakai pemutih…"
-                  rows={2}
-                />
-              </Field>
+
+              {/* Atribut khusus dinamis (saran per kategori) */}
+              <div className="mb-4">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-muted">
+                    Atribut Khusus
+                    <span className="ml-1 normal-case text-muted/70">
+                      · sesuai {kategoriLabel}
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addAtribut}
+                    className="text-[11.5px] font-semibold text-accent2 hover:underline"
+                  >
+                    + Tambah
+                  </button>
+                </div>
+                {form.atribut.length === 0 && (
+                  <p className="text-[12px] text-muted">
+                    Belum ada atribut. Tambahkan sesuai produk kamu.
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {form.atribut.map((row, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <input
+                        value={row.key}
+                        onChange={(e) => setAtribut(i, { key: e.target.value })}
+                        placeholder="Label"
+                        className="w-[38%] rounded-md border border-border bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+                      />
+                      <input
+                        value={row.value}
+                        onChange={(e) => setAtribut(i, { value: e.target.value })}
+                        placeholder={row.placeholder ?? "Nilai (koma = banyak)"}
+                        className="flex-1 rounded-md border border-border bg-surface px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeAtribut(i)}
+                        className="px-1 py-1.5 text-[12px] text-muted hover:text-red"
+                        title="Hapus atribut"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-1.5 text-[11px] text-muted">
+                  Saran otomatis sesuai kategori — bebas ubah, hapus, atau tambah.
+                  Pisahkan beberapa nilai dengan koma.
+                </p>
+              </div>
+
               <Field label="Deskripsi" hint="dipakai CS AI & listing">
                 <Textarea
                   value={form.deskripsi}
                   onChange={(v) => set({ deskripsi: v })}
                   placeholder="Deskripsi produk lengkap…"
                   rows={3}
+                />
+              </Field>
+              <Field label="Catatan Tambahan" hint="info bebas lain">
+                <Textarea
+                  value={form.catatanTambahan}
+                  onChange={(v) => set({ catatanTambahan: v })}
+                  placeholder="Info lain yang perlu diketahui pembeli…"
+                  rows={2}
                 />
               </Field>
 

@@ -270,6 +270,25 @@ export function ProductDoctor() {
                 </p>
               </Card>
             )}
+
+            <div className="mt-4 rounded-card border border-accent/30 bg-accent/5 p-5">
+              <h3 className="flex items-center gap-2 font-display text-[14px] font-bold">
+                🔒 Kenapa LabaLab Berbeda
+              </h3>
+              <p className="mt-2 text-[13px] font-semibold text-accent2">
+                Kontrol penuh di tangan kamu
+              </p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-muted">
+                Beberapa fitur AI marketplace bisa mengubah judul dan foto
+                listing kamu secara otomatis berdasarkan data performa — kadang
+                tanpa kamu sadari.
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                LabaLab tidak pernah mengubah listing kamu secara langsung. Kami
+                cuma kasih rekomendasi — kamu yang putuskan mau terapkan atau
+                tidak, lewat marketplace kamu sendiri.
+              </p>
+            </div>
           </>
         )}
       </div>

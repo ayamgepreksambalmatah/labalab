@@ -24,10 +24,13 @@ export default async function ListingPage() {
     <div>
       <header className="mb-6">
         <h1 className="font-display text-2xl font-extrabold tracking-tight">
-          ✍️ Listing Generator
+          ✍️ Listing Generator — Satu Data, Semua Platform
         </h1>
-        <p className="mt-1 text-[13px] text-muted">
-          Buat judul, deskripsi, dan kata kunci produk yang siap tempel & konversi.
+        <p className="mt-1 text-[13px] leading-relaxed text-muted">
+          Fitur AI generate listing sekarang ada di semua marketplace — tapi
+          masing-masing cuma tahu platform-nya sendiri. LabaLab pakai data produk
+          yang SAMA untuk hasilkan versi konsisten di Shopee, Tokopedia, & TikTok
+          Shop sekaligus, disesuaikan gaya masing-masing.
         </p>
       </header>
       {usage && <QuotaBar label="Listing Generator" used={usage.used} max={usage.max} />}
