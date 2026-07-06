@@ -85,6 +85,60 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
   insight chat-vs-checkout (§4.3, sumber data belum pasti; tabel placeholder sudah ada)
 - Migration baru WAJIB dijalankan: `0004_product_knowledge.sql`, `0005_product_history.sql`
 
+## Sesi tunggal (1 akun = 1 sesi aktif) — selesai
+- Migration WAJIB: `0007_active_sessions.sql` (tabel + RLS + daftar publication Realtime),
+  `0008_session_geo.sql` (kolom `ip_address`, `location`).
+- Token acak di-UPSERT ke `active_sessions` tiap login (`establishSingleSession` di
+  `src/lib/auth/session.ts`), dipanggil dari `auth/actions.ts` (email/pw) & `auth/callback`
+  (Google/konfirmasi email). Token disimpan di cookie httpOnly `ll_session_token`.
+  Saat login, IP (x-forwarded-for) + lokasi kasar (Vercel geo headers) ikut disimpan.
+- Otoritas: `src/lib/supabase/middleware.ts` bandingkan cookie vs DB tiap request
+  terproteksi → mismatch = clear cookie + redirect `/login?message=session-terminated`
+  (API balas 401). `last_active` di-update di sini, throttle maks 1×/60 dtk.
+  Kick instan (UX): `SessionGuard.tsx` via Realtime → `/api/session/verify`.
+- Halaman `/dashboard/settings`: kartu perangkat aktif (device/lokasi/IP/last_active) +
+  tombol "Keluarkan semua perangkat lain" (`signOutOtherDevices` → rotasi token).
+- Email notifikasi login perangkat baru: `src/lib/email/send.ts` (Resend via fetch).
+  Butuh env `RESEND_API_KEY` + `EMAIL_FROM` (domain terverifikasi); degrade aman kalau kosong.
+
+## Menu Pengaturan lengkap (spec settings) — selesai
+- Migration WAJIB: `0009_settings.sql` (subscriptions.auto_renew; profiles.nomor_wa,
+  tone_preference, notif_kuota_habis, notif_laporan_mingguan).
+- Halaman `/dashboard/settings` (urutan spec): Langganan & Billing (kuota bar +
+  riwayat + upgrade/cancel), Profil & Info Toko, Keamanan (ganti password + perangkat
+  aktif), Notifikasi, Koneksi Akun (set password utk user Google), Data Saya (ekspor +
+  hapus akun), Bantuan.
+- Data billing: `src/lib/settings/billing.ts`. Server actions: `src/lib/settings/actions.ts`
+  (updateProfile/changePassword/setPassword/updateNotifications/cancelSubscription/deleteAccount).
+  Ekspor JSON: `GET /api/settings/export-data`. Hapus akun: `admin.deleteUser` → cascade.
+- Deteksi metode login via `getUser().identities` (email vs google) → tampilkan
+  ganti/set password sesuai. Komponen di `src/components/settings/*`.
+- Halaman publik placeholder `/privacy` & `/terms` (ditambah ke publicPaths proxy).
+
+## Product Knowledge universal (spec product-knowledge-universal) — selesai
+- Migration WAJIB: `0010_generalize_product_knowledge.sql` (field universal
+  `masa_berlaku`, `sertifikasi`, `kondisi_pengiriman`, `catatan_tambahan`, dan
+  `atribut_khusus` JSONB; + migrasi data lama fashion → atribut_khusus). Kolom lama
+  (`ukuran_tersedia`, `bahan`, `cara_perawatan`) TETAP ADA (backward compat), UI baru
+  tidak mengeditnya lagi.
+- Saran atribut per kategori: `src/lib/products/category-attribute-suggestions.ts`
+  (placeholder di form, bukan validasi). Formatter knowledge untuk AI:
+  `src/lib/products/knowledge.ts` (`productKnowledgeLines`, `formatAtribut`).
+- Form "Detail Lengkap" (`ProductsManager.tsx`): field universal + editor atribut
+  dinamis (seed saran saat ganti kategori kalau belum diisi). Prompt CS Reply
+  (`/api/extension/reply-suggestion`) & prefill Listing Generator baca atribut_khusus
+  dinamis + fallback field legacy. Product Doctor pakai input ad-hoc → tak terpengaruh.
+
+## Reposisi copy (spec repositioning) — selesai
+- Positioning: dari "AI bikinin listing" → "audit listing + kontrol penuh di seller".
+- Product Doctor: judul/subtitle baru + section "🔒 Kenapa LabaLab Berbeda" di bawah
+  hasil audit (`ProductDoctor.tsx`). Landing (`app/page.tsx`) diframe ulang ke kombinasi
+  fitur (profit + audit + CS), bukan generate listing.
+- Listing Generator multi-platform: checkbox Shopee/Tokopedia/TikTok → prompt & schema
+  hasilkan versi TERPISAH per platform. `ListingAiResult` sekarang `{ versions: [...] }`
+  (bukan lagi single {judul,deskripsi,...}) — gaya per platform di `LISTING_PLATFORM_STYLE`
+  (prompts.ts). Route validasi `platforms[]`, UI tampilkan hasil per tab platform.
+
 ## Commands
 - `npm run dev` — dev server
 - `npm run build` — production build (jalankan sebelum anggap selesai)
