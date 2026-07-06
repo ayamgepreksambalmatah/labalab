@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
+import { establishSingleSession } from "@/lib/auth/session";
 
 /**
  * OAuth & email-confirmation callback. Supabase mengarahkan ke sini
@@ -13,8 +14,10 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createServerClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // 1 akun = 1 sesi aktif (cover Google OAuth + konfirmasi email).
+      if (data.user) await establishSingleSession(supabase, data.user.id);
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

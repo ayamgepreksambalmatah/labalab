@@ -1,8 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { createServerClient } from "@/lib/supabase/server";
+import { establishSingleSession } from "@/lib/auth/session";
 
 export type AuthState = { error: string } | null;
 
@@ -19,11 +21,17 @@ export async function login(
   }
 
   const supabase = await createServerClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
   if (error) {
     return { error: translateAuthError(error.message) };
   }
+
+  // 1 akun = 1 sesi aktif: catat sesi baru & kick device lama.
+  if (data.user) await establishSingleSession(supabase, data.user.id);
 
   redirect("/dashboard");
 }
@@ -61,9 +69,13 @@ export async function signup(
   }
 
   // Kalau konfirmasi email aktif, session belum ada → arahkan ke halaman info.
+  // (Sesi tunggal di-establish nanti di /auth/callback saat email dikonfirmasi.)
   if (!data.session) {
     redirect("/login?message=cek-email");
   }
+
+  // Signup langsung dapat session → catat sesi aktif.
+  if (data.user) await establishSingleSession(supabase, data.user.id);
 
   redirect("/dashboard");
 }
@@ -84,6 +96,22 @@ export async function signInWithGoogle(): Promise<void> {
     redirect("/login?message=auth-gagal");
   }
   redirect(data.url);
+}
+
+/**
+ * Keluarkan semua perangkat LAIN. Rotasi session_token (generate baru,
+ * timpa baris DB, set cookie baru untuk perangkat INI). Perangkat lain yang
+ * masih memegang token lama akan gagal cocok → ter-kick di request/Realtime
+ * berikutnya. Perangkat ini tetap login karena cookie-nya ikut diperbarui.
+ */
+export async function signOutOtherDevices(): Promise<void> {
+  const supabase = await createServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const userId = data?.claims?.sub as string | undefined;
+  if (!userId) redirect("/login");
+
+  await establishSingleSession(supabase, userId);
+  revalidatePath("/dashboard/settings");
 }
 
 /** Logout. */

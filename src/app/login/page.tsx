@@ -14,6 +14,9 @@ import { createServerClient } from "@/lib/supabase/server";
 const MESSAGES: Record<string, string> = {
   "cek-email": "Cek inbox kamu untuk link konfirmasi, lalu login di sini.",
   "auth-gagal": "Login gagal. Silakan coba lagi.",
+  "session-terminated":
+    "Akun ini baru saja login di perangkat lain. Untuk keamanan, sesi ini diakhiri.",
+  "account-deleted": "Akun kamu sudah dihapus permanen. Sampai jumpa!",
 };
 
 export default async function LoginPage({

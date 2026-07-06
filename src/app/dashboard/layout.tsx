@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { SessionGuard } from "@/components/auth/SessionGuard";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolvePlan } from "@/lib/plans";
 
@@ -24,6 +25,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="md:grid md:grid-cols-[15rem_1fr] min-h-screen">
+      <SessionGuard userId={userId} />
       <Sidebar plan={plan} />
       <main className="px-5 py-8 md:px-9 md:py-10 max-w-5xl w-full">
         {children}

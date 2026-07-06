@@ -9,6 +9,7 @@
 export type Plan = "free" | "pro" | "max";
 export type Platform = "shopee" | "tokopedia" | "tiktok";
 export type SubscriptionStatus = "pending" | "paid" | "failed" | "expired";
+export type TonePreference = "santai" | "profesional" | "genz";
 
 export type Json =
   | string
@@ -29,6 +30,10 @@ export interface Database {
           store_name: string | null;
           plan: Plan;
           plan_expires_at: string | null;
+          nomor_wa: string | null;
+          tone_preference: TonePreference;
+          notif_kuota_habis: boolean;
+          notif_laporan_mingguan: boolean;
           created_at: string;
         };
         Insert: {
@@ -38,9 +43,35 @@ export interface Database {
           store_name?: string | null;
           plan?: Plan;
           plan_expires_at?: string | null;
+          nomor_wa?: string | null;
+          tone_preference?: TonePreference;
+          notif_kuota_habis?: boolean;
+          notif_laporan_mingguan?: boolean;
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["profiles"]["Insert"]>;
+        Relationships: [];
+      };
+      active_sessions: {
+        Row: {
+          user_id: string;
+          session_token: string;
+          device_info: string | null;
+          ip_address: string | null;
+          location: string | null;
+          last_active: string;
+        };
+        Insert: {
+          user_id: string;
+          session_token: string;
+          device_info?: string | null;
+          ip_address?: string | null;
+          location?: string | null;
+          last_active?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["active_sessions"]["Insert"]
+        >;
         Relationships: [];
       };
       products: {
@@ -59,6 +90,11 @@ export interface Database {
           cara_perawatan: string | null;
           bahan: string | null;
           deskripsi: string | null;
+          masa_berlaku: string | null;
+          sertifikasi: string | null;
+          kondisi_pengiriman: string | null;
+          catatan_tambahan: string | null;
+          atribut_khusus: Json | null;
           created_at: string;
           updated_at: string;
         };
@@ -77,6 +113,11 @@ export interface Database {
           cara_perawatan?: string | null;
           bahan?: string | null;
           deskripsi?: string | null;
+          masa_berlaku?: string | null;
+          sertifikasi?: string | null;
+          kondisi_pengiriman?: string | null;
+          catatan_tambahan?: string | null;
+          atribut_khusus?: Json | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -124,6 +165,7 @@ export interface Database {
           paid_at: string | null;
           period_start: string | null;
           period_end: string | null;
+          auto_renew: boolean;
           created_at: string;
         };
         Insert: {
@@ -136,6 +178,7 @@ export interface Database {
           paid_at?: string | null;
           period_start?: string | null;
           period_end?: string | null;
+          auto_renew?: boolean;
           created_at?: string;
         };
         Update: Partial<
