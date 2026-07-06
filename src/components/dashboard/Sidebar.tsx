@@ -18,6 +18,7 @@ const SECTIONS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", icon: "🏠", label: "Ringkasan", ready: true },
       { href: "/dashboard/products", icon: "📦", label: "Produk Saya", ready: true },
+      { href: "/dashboard/settings", icon: "⚙️", label: "Pengaturan", ready: true },
     ],
   },
   {

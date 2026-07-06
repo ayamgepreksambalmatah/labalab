@@ -175,6 +175,15 @@ export default async function PricingPage() {
         <p className="mt-8 text-center text-[12px] text-muted">
           Pembayaran aman via Midtrans — QRIS, Virtual Account, e-wallet.
         </p>
+        <p className="mx-auto mt-2 max-w-xl text-center text-[11.5px] leading-relaxed text-muted">
+          Pembayaran langganan bersifat final dan tidak dapat dikembalikan
+          (non-refundable), kecuali dalam kasus kesalahan teknis dari pihak kami
+          yang mengakibatkan Layanan tidak dapat digunakan sama sekali. Selengkapnya di{" "}
+          <Link href="/terms" className="text-accent2 hover:underline">
+            Syarat &amp; Ketentuan
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );
