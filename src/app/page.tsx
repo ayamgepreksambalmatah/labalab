@@ -13,43 +13,15 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-const FEATURES: {
-  icon: string;
-  title: string;
-  desc: string;
-  soon?: boolean;
-}[] = [
-  {
-    icon: "🧮",
-    title: "Cek Untung Asli",
-    desc: "Hitung margin bersih per produk, per platform — setelah semua komisi & biaya.",
-  },
-  {
-    icon: "📊",
-    title: "Sales Analyzer",
-    desc: "Upload laporan penjualan, temukan produk yang diam-diam bikin rugi.",
-  },
-  {
-    icon: "🔥",
-    title: "Promo Simulator",
-    desc: "Cek dulu sebelum ikut flash sale — jangan sampai ramai tapi rugi.",
-  },
-  {
-    icon: "🩺",
-    title: "Product Doctor",
-    desc: "Audit listing + baca review pembeli, kasih skor & saran perbaikan.",
-  },
-  {
-    icon: "📦",
-    title: "Produk Saya",
-    desc: "Simpan semua data produk, terhubung otomatis ke semua tools.",
-  },
-  {
-    icon: "💬",
-    title: "CS AI Assistant",
-    desc: "Balas chat pembeli lebih cepat dengan AI yang paham produk kamu.",
-    soon: true,
-  },
+// Hanya fitur yang benar-benar sudah ada — jangan janjikan yang belum (mis.
+// cashback, export PDF, hitung retur).
+const REASONS: string[] = [
+  "Hitung biaya admin/komisi platform otomatis",
+  "Hitung biaya iklan otomatis",
+  "Hitung biaya packing",
+  "Simpan histori penjualan",
+  "Export ke Excel",
+  "AI kasih saran/insight profit",
 ];
 
 const STEPS: { title: string; desc: string }[] = [
@@ -131,12 +103,11 @@ export default async function Home() {
           AI Profit Assistant untuk Seller Indonesia
         </span>
         <h1 className="mx-auto mt-5 max-w-2xl font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-[42px]">
-          Jangan Sampai Toko Ramai Tapi Ternyata Rugi
+          Berhenti Menjual Tanpa Tahu Berapa Profit Bersihmu
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-          Marketplace ambil komisi, biaya iklan, dan subsidi ongkir dari tiap
-          penjualan. LabaLab hitung untung <strong className="text-text">ASLI</strong>{" "}
-          kamu — bukan omzet kotor yang bikin salah kira.
+          Hitung profit Shopee, Tokopedia, dan TikTok Shop secara otomatis. Tidak
+          perlu Excel, tidak perlu rumus, cukup masukkan data pesanan.
         </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
@@ -191,33 +162,24 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* 3. FITUR */}
+      {/* 3. MENGAPA PILIH LABALAB */}
       <section id="fitur" className="scroll-mt-8 py-16">
         <h2 className="text-center font-display text-2xl font-extrabold tracking-tight">
-          Semua yang Toko Kamu Butuhkan
+          Mengapa Pilih LabaLab
         </h2>
         <p className="mx-auto mt-2 max-w-lg text-center text-[13.5px] text-muted">
-          Satu tempat, semua data nyambung — dari hitung untung sampai audit
-          listing.
+          Semua perhitungan yang bikin pusing, otomatis di satu tempat.
         </p>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
+        <div className="mx-auto mt-8 grid max-w-2xl gap-3 sm:grid-cols-2">
+          {REASONS.map((r) => (
             <div
-              key={f.title}
-              className="rounded-card border border-border bg-surface p-5"
+              key={r}
+              className="flex items-center gap-3 rounded-card border border-border bg-surface px-4 py-3.5"
             >
-              <div className="flex items-center gap-2.5">
-                <span className="text-2xl">{f.icon}</span>
-                <h3 className="font-display text-[15px] font-bold">{f.title}</h3>
-                {f.soon && (
-                  <span className="ml-auto rounded-full border border-border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted">
-                    Segera
-                  </span>
-                )}
-              </div>
-              <p className="mt-2.5 text-[13px] leading-relaxed text-muted">
-                {f.desc}
-              </p>
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-green/15 text-[13px] font-bold text-green">
+                ✓
+              </span>
+              <span className="text-[13.5px] font-medium">{r}</span>
             </div>
           ))}
         </div>
@@ -369,10 +331,10 @@ export default async function Home() {
       {/* 8. CTA PENUTUP */}
       <section className="rounded-card border border-accent/30 bg-gradient-to-br from-accent/15 to-accent2/5 p-10 text-center">
         <h2 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
-          Berhenti Tebak-Tebak Untung
+          Mulai Hitung Profit Secara Akurat Hari Ini
         </h2>
         <p className="mt-2 text-[14px] text-muted">
-          Mulai gratis, tanpa kartu kredit.
+          Gratis. Tanpa kartu kredit.
         </p>
         <Link
           href="/register"
@@ -468,13 +430,15 @@ function PriceCard({
 }) {
   return (
     <div
-      className={`relative rounded-card border bg-surface p-6 ${
-        popular ? "border-accent/50" : "border-border"
+      className={`relative rounded-card border bg-surface p-6 transition-transform ${
+        popular
+          ? "border-accent/50 shadow-xl md:z-10 md:scale-105"
+          : "border-border"
       }`}
     >
       {popular && (
-        <span className="absolute -top-3 left-6 rounded-full bg-gradient-to-r from-accent to-accent2 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
-          ⭐ Populer
+        <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-to-r from-accent to-accent2 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
+          ⭐ Paling Populer
         </span>
       )}
       <p className="text-xs font-bold uppercase tracking-widest text-accent2">
