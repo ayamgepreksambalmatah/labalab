@@ -22,6 +22,10 @@ export type Product = {
   kondisi_pengiriman: string | null;
   catatan_tambahan: string | null;
   atribut_khusus: AtributKhusus | null;
+  // Info supplier (pencatatan pribadi seller)
+  harga_supplier: number | null;
+  link_supplier: string | null;
+  kontak_supplier: string | null;
   // Legacy (backward compat — tetap dibaca, tidak lagi diedit terpisah di UI)
   garansi: string | null;
   cara_perawatan: string | null;
@@ -30,7 +34,7 @@ export type Product = {
 };
 
 const COLUMNS =
-  "id, nama, platform, kategori, harga, modal, stok, faq, deskripsi, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, garansi, cara_perawatan, bahan, ukuran_tersedia";
+  "id, nama, platform, kategori, harga, modal, stok, faq, deskripsi, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, harga_supplier, link_supplier, kontak_supplier, garansi, cara_perawatan, bahan, ukuran_tersedia";
 
 /** Ambil semua produk milik user yang login (RLS membatasi ke user_id sendiri). */
 export async function getProducts(): Promise<Product[]> {

@@ -26,6 +26,9 @@ export type ProductInput = {
     kondisi_pengiriman: string | null;
     catatan_tambahan: string | null;
     atribut_khusus: AtributKhusus | null;
+    harga_supplier: number | null;
+    link_supplier: string | null;
+    kontak_supplier: string | null;
   };
 };
 

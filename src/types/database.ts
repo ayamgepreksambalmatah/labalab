@@ -95,6 +95,9 @@ export interface Database {
           kondisi_pengiriman: string | null;
           catatan_tambahan: string | null;
           atribut_khusus: Json | null;
+          harga_supplier: number | null;
+          link_supplier: string | null;
+          kontak_supplier: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -118,6 +121,9 @@ export interface Database {
           kondisi_pengiriman?: string | null;
           catatan_tambahan?: string | null;
           atribut_khusus?: Json | null;
+          harga_supplier?: number | null;
+          link_supplier?: string | null;
+          kontak_supplier?: string | null;
           created_at?: string;
           updated_at?: string;
         };

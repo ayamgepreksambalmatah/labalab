@@ -58,6 +58,10 @@ type FormState = {
   catatanTambahan: string;
   atribut: AtributRow[];
   faq: FaqItem[];
+  // Info supplier (pencatatan pribadi)
+  hargaSupplier: number | "";
+  linkSupplier: string;
+  kontakSupplier: string;
 };
 
 /** Baris atribut awal (saran per kategori, nilai kosong + contoh placeholder). */
@@ -83,6 +87,9 @@ const emptyForm: FormState = {
   catatanTambahan: "",
   atribut: seedAtribut("fashion"),
   faq: [],
+  hargaSupplier: "",
+  linkSupplier: "",
+  kontakSupplier: "",
 };
 
 function productToForm(p: Product): FormState {
@@ -108,6 +115,9 @@ function productToForm(p: Product): FormState {
     catatanTambahan: p.catatan_tambahan ?? p.cara_perawatan ?? "",
     atribut: atribut.length ? atribut : seedAtribut(p.kategori),
     faq: p.faq ?? [],
+    hargaSupplier: p.harga_supplier ?? "",
+    linkSupplier: p.link_supplier ?? "",
+    kontakSupplier: p.kontak_supplier ?? "",
   };
 }
 
@@ -141,6 +151,9 @@ function formToInput(form: FormState): ProductInput {
       kondisi_pengiriman: form.kondisiPengiriman.trim() || null,
       catatan_tambahan: form.catatanTambahan.trim() || null,
       atribut_khusus: Object.keys(atributObj).length ? atributObj : null,
+      harga_supplier: form.hargaSupplier === "" ? null : Number(form.hargaSupplier),
+      link_supplier: form.linkSupplier.trim() || null,
+      kontak_supplier: form.kontakSupplier.trim() || null,
     },
   };
 }
@@ -416,6 +429,37 @@ export function ProductsManager({
                   rows={2}
                 />
               </Field>
+
+              {/* Info supplier — catatan pribadi seller */}
+              <div className="mb-4 rounded-[9px] border border-border bg-surface2/40 p-3">
+                <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
+                  Info Supplier (opsional)
+                </p>
+                <Field label="Harga Supplier">
+                  <MoneyInput
+                    value={form.hargaSupplier || ""}
+                    onChange={(v) => set({ hargaSupplier: v })}
+                    placeholder="50000"
+                  />
+                </Field>
+                <Field label="Link Supplier">
+                  <TextInput
+                    value={form.linkSupplier}
+                    onChange={(v) => set({ linkSupplier: v })}
+                    placeholder="https://… atau nama toko supplier"
+                  />
+                </Field>
+                <Field label="Kontak Supplier">
+                  <TextInput
+                    value={form.kontakSupplier}
+                    onChange={(v) => set({ kontakSupplier: v })}
+                    placeholder="WA / nama kontak"
+                  />
+                </Field>
+                <p className="text-[11px] text-muted">
+                  Catatan pribadi kamu — tidak ditampilkan ke pembeli.
+                </p>
+              </div>
 
               {/* FAQ editor */}
               <div className="mb-4">
