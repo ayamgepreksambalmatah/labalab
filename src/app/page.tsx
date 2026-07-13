@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Logo } from "@/components/Logo";
 import { createServerClient } from "@/lib/supabase/server";
@@ -269,6 +270,35 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* 3b. SHOWCASE — screenshot asli aplikasi */}
+      <section className="py-16">
+        <h2 className="text-center font-display text-2xl font-extrabold tracking-tight">
+          Lihat LabaLab Langsung
+        </h2>
+        <p className="mx-auto mt-2 max-w-lg text-center text-[13.5px] text-muted">
+          Tampilan asli aplikasi — bukan mockup.
+        </p>
+        <div className="mt-8 space-y-5">
+          <Shot
+            src="/screenshots/cek-untung.png"
+            alt="Cek Untung Asli — hitung profit bersih per produk setelah komisi, iklan, dan ongkir"
+            caption="Cek Untung Asli — lihat profit bersih setelah semua potongan, otomatis."
+          />
+          <div className="grid gap-5 md:grid-cols-2">
+            <Shot
+              src="/screenshots/dashboard.png"
+              alt="Dashboard ringkasan penjualan dengan breakdown per platform"
+              caption="Ringkasan profit & breakdown per platform di satu layar."
+            />
+            <Shot
+              src="/screenshots/laporan.png"
+              alt="Laporan detail semua transaksi lintas channel dengan export Excel"
+              caption="Semua transaksi tercatat & bisa di-export ke Excel."
+            />
+          </div>
+        </div>
+      </section>
+
       {/* 4. CARA KERJA */}
       <section
         id="cara-kerja"
@@ -465,6 +495,37 @@ export default async function Home() {
         </p>
       </footer>
     </main>
+  );
+}
+
+function Shot({
+  src,
+  alt,
+  caption,
+}: {
+  src: string;
+  alt: string;
+  caption: string;
+}) {
+  return (
+    <figure className="overflow-hidden rounded-card border border-border bg-surface">
+      <div className="flex items-center gap-1.5 border-b border-border px-4 py-2.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-red/60" />
+        <span className="h-2.5 w-2.5 rounded-full bg-yellow/60" />
+        <span className="h-2.5 w-2.5 rounded-full bg-green/60" />
+      </div>
+      <Image
+        src={src}
+        alt={alt}
+        width={2480}
+        height={1640}
+        sizes="(max-width: 768px) 100vw, 960px"
+        className="h-auto w-full"
+      />
+      <figcaption className="px-4 py-3 text-center text-[12.5px] text-muted">
+        {caption}
+      </figcaption>
+    </figure>
   );
 }
 
