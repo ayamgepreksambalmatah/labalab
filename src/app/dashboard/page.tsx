@@ -3,8 +3,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolvePlan } from "@/lib/plans";
-import { getCompilation, getSalesSummary } from "@/lib/products/dashboard";
-import { getMonthlyStockSpend } from "@/lib/products/stockPurchases";
+import {
+  getCompilation,
+  getSalesSummary,
+  getRestockAlerts,
+  getMonthlyCashFlow,
+  type CashFlow,
+} from "@/lib/products/dashboard";
+import { RestockAlerts } from "@/components/products/RestockAlerts";
 import { fmt } from "@/lib/format";
 
 const PLATFORM_META: Record<string, { emoji: string; label: string }> = {
@@ -84,10 +90,11 @@ export default async function DashboardPage({
   const displayName = profile?.full_name || profile?.email || "Seller";
   const isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
   const { upgrade } = await searchParams;
-  const [comp, summary, stockSpend] = await Promise.all([
+  const [comp, summary, restock, cashFlow] = await Promise.all([
     getCompilation(),
     getSalesSummary(),
-    getMonthlyStockSpend(),
+    getRestockAlerts(),
+    getMonthlyCashFlow(),
   ]);
 
   return (
@@ -125,21 +132,9 @@ export default async function DashboardPage({
         </span>
       </div>
 
-      {stockSpend.count > 0 && (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-5">
-          <div>
-            <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted">
-              📦 Modal Dikeluarkan Bulan Ini
-            </p>
-            <p className="mt-1 font-display text-[22px] font-extrabold text-yellow">
-              {fmt(stockSpend.total)}
-            </p>
-          </div>
-          <p className="text-[12px] text-muted">
-            {stockSpend.count} pembelian stok · {stockSpend.monthLabel}
-          </p>
-        </div>
-      )}
+      {restock.length > 0 && <RestockAlerts items={restock} />}
+
+      {cashFlow.hasData && <CashPositionCard cf={cashFlow} />}
 
       {summary.hasTransactions ? (
         <div className="mt-8">
@@ -298,6 +293,42 @@ export default async function DashboardPage({
           ),
         )}
       </div>
+    </div>
+  );
+}
+
+function CashPositionCard({ cf }: { cf: CashFlow }) {
+  const negative = cf.net < 0;
+  return (
+    <div className="mt-6 rounded-card border border-border bg-surface p-5">
+      <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted">
+        Posisi Kas Bisnis · {cf.monthLabel}
+      </p>
+      <div className="mt-3 space-y-2 text-[13.5px]">
+        <div className="flex items-center justify-between">
+          <span className="text-muted">📤 Modal Dikeluarkan (beli stok)</span>
+          <span className="font-semibold text-text">-{fmt(cf.modalKeluar)}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-muted">📥 Profit dari Penjualan</span>
+          <span className="font-semibold text-green">+{fmt(cf.profitMasuk)}</span>
+        </div>
+        <div className="flex items-center justify-between border-t border-border pt-2">
+          <span className="font-semibold">Net Bulan Ini</span>
+          <span
+            className={`font-display text-[17px] font-extrabold ${negative ? "text-text" : "text-green"}`}
+          >
+            {negative ? "−" : "+"}
+            {fmt(Math.abs(cf.net))}
+          </span>
+        </div>
+      </div>
+      {negative && (
+        <p className="mt-3 rounded-[10px] border border-border bg-surface2 px-3.5 py-2.5 text-[12px] leading-relaxed text-muted">
+          💡 Wajar minus di awal — kamu sedang investasi ke stok. Fokus habiskan
+          stok yang sudah ada; kas berbalik saat stok terjual.
+        </p>
+      )}
     </div>
   );
 }

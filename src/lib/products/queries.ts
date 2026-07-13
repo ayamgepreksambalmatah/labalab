@@ -15,6 +15,7 @@ export type Product = {
   modal: number;
   // Detail lengkap (Product Knowledge universal)
   stok: number | null;
+  stok_minimum: number | null;
   faq: FaqItem[] | null;
   deskripsi: string | null;
   masa_berlaku: string | null;
@@ -35,7 +36,7 @@ export type Product = {
 };
 
 const COLUMNS =
-  "id, nama, platform, kategori, harga, modal, stok, faq, deskripsi, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, harga_supplier, link_supplier, kontak_supplier, status_stok_supplier, garansi, cara_perawatan, bahan, ukuran_tersedia";
+  "id, nama, platform, kategori, harga, modal, stok, stok_minimum, faq, deskripsi, masa_berlaku, sertifikasi, kondisi_pengiriman, catatan_tambahan, atribut_khusus, harga_supplier, link_supplier, kontak_supplier, status_stok_supplier, garansi, cara_perawatan, bahan, ukuran_tersedia";
 
 /** Ambil semua produk milik user yang login (RLS membatasi ke user_id sendiri). */
 export async function getProducts(): Promise<Product[]> {

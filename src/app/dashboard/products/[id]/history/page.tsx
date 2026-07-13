@@ -44,6 +44,15 @@ export default async function ProductHistoryPage({
   const totalBeli = purchases.reduce((s, p) => s + Number(p.total_bayar), 0);
   const totalQtyBeli = purchases.reduce((s, p) => s + Number(p.qty_dibeli), 0);
 
+  // Break-even per batch: berapa unit harus terjual agar modal batch kembali.
+  // Pakai harga jual terkini − harga beli batch (belum termasuk biaya platform).
+  const breakEven = (hargaPerUnit: number, totalBayar: number, qtyDibeli: number) => {
+    const profitPerUnit = product.harga - hargaPerUnit;
+    if (profitPerUnit <= 0) return { warn: true as const };
+    const units = Math.ceil(totalBayar / profitPerUnit);
+    return { warn: false as const, units, achievable: units <= qtyDibeli };
+  };
+
   const label = (i: number) =>
     history[i].periode_label ||
     new Date(history[i].created_at).toLocaleDateString("id-ID");
@@ -151,13 +160,14 @@ export default async function ProductHistoryPage({
         </div>
         <Card title="Riwayat Pembelian Stok" icon="📦">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] text-[12.5px]">
+            <table className="w-full min-w-[720px] text-[12.5px]">
               <thead>
                 <tr className="border-b border-border text-muted">
                   <th className="py-2 pr-3 text-left font-semibold">Tanggal</th>
                   <th className="py-2 px-2 text-right font-semibold">Qty</th>
                   <th className="py-2 px-2 text-right font-semibold">Total Bayar</th>
                   <th className="py-2 px-2 text-right font-semibold">Harga/Unit</th>
+                  <th className="py-2 px-2 text-right font-semibold">Balik Modal</th>
                   <th className="py-2 pl-2 text-left font-semibold">Efek & Catatan</th>
                 </tr>
               </thead>
@@ -169,6 +179,28 @@ export default async function ProductHistoryPage({
                     <td className="py-2 px-2 text-right tabular-nums">{fmt(p.total_bayar)}</td>
                     <td className="py-2 px-2 text-right font-semibold tabular-nums text-accent2">
                       {fmt(p.harga_per_unit)}
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      {(() => {
+                        const be = breakEven(p.harga_per_unit, p.total_bayar, p.qty_dibeli);
+                        if (be.warn)
+                          return (
+                            <span
+                              className="text-[11.5px] text-red"
+                              title="Harga jual saat ini ≤ harga beli batch ini"
+                            >
+                              ⚠️ cek harga jual
+                            </span>
+                          );
+                        return (
+                          <span
+                            className={`text-[12px] font-semibold ${be.achievable ? "text-green" : "text-yellow"}`}
+                            title={`Perlu jual ${be.units} dari ${p.qty_dibeli} pcs`}
+                          >
+                            {be.units} pcs
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-2 pl-2">
                       <div className="flex flex-wrap gap-1.5">
@@ -192,6 +224,11 @@ export default async function ProductHistoryPage({
               </tbody>
             </table>
           </div>
+          <p className="mt-2.5 text-[11px] leading-relaxed text-muted">
+            <b>Balik Modal</b> = perkiraan unit yang perlu terjual agar modal batch
+            kembali (harga jual saat ini − harga beli batch). Estimasi kasar,{" "}
+            <b>belum termasuk</b> biaya platform &amp; iklan.
+          </p>
         </Card>
       </>
     );

@@ -59,6 +59,7 @@ type FormState = {
   harga: number;
   modal: number;
   stok: number | "";
+  stokMinimum: number | "";
   masaBerlaku: string;
   sertifikasi: string;
   kondisiPengiriman: string;
@@ -89,6 +90,7 @@ const emptyForm: FormState = {
   harga: 0,
   modal: 0,
   stok: "",
+  stokMinimum: 10,
   masaBerlaku: "",
   sertifikasi: "",
   kondisiPengiriman: "",
@@ -117,6 +119,7 @@ function productToForm(p: Product): FormState {
     harga: p.harga,
     modal: p.modal,
     stok: p.stok ?? "",
+    stokMinimum: p.stok_minimum ?? 10,
     // Fallback ke field legacy supaya data lama tetap muncul di field universal.
     masaBerlaku: p.masa_berlaku ?? p.garansi ?? "",
     sertifikasi: p.sertifikasi ?? "",
@@ -155,6 +158,7 @@ function formToInput(form: FormState): ProductInput {
     modal: form.modal,
     detail: {
       stok: form.stok === "" ? null : Number(form.stok),
+      stok_minimum: form.stokMinimum === "" ? 10 : Number(form.stokMinimum),
       faq: faq.length ? faq : null,
       deskripsi: form.deskripsi.trim() || null,
       masa_berlaku: form.masaBerlaku.trim() || null,
@@ -349,14 +353,21 @@ export function ProductsManager({
                     placeholder="100"
                   />
                 </Field>
-                <Field label="Masa Berlaku / Garansi">
-                  <TextInput
-                    value={form.masaBerlaku}
-                    onChange={(v) => set({ masaBerlaku: v })}
-                    placeholder="1 thn garansi / 3 hari di kulkas"
+                <Field label="Stok Minimum" hint="alert restock">
+                  <NumberInput
+                    value={form.stokMinimum}
+                    onChange={(v) => set({ stokMinimum: v })}
+                    placeholder="10"
                   />
                 </Field>
               </div>
+              <Field label="Masa Berlaku / Garansi">
+                <TextInput
+                  value={form.masaBerlaku}
+                  onChange={(v) => set({ masaBerlaku: v })}
+                  placeholder="1 thn garansi / 3 hari di kulkas"
+                />
+              </Field>
               <Field label="Sertifikasi" hint="opsional">
                 <TextInput
                   value={form.sertifikasi}

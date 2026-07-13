@@ -30,33 +30,3 @@ export async function getStockPurchasesForProduct(
   return (data ?? []) as StockPurchase[];
 }
 
-/**
- * Total modal (total_bayar) yang dikeluarkan pada bulan kalender berjalan.
- * Dipakai kartu "Modal Dikeluarkan Bulan Ini" di Dashboard.
- */
-export async function getMonthlyStockSpend(): Promise<{
-  total: number;
-  count: number;
-  monthLabel: string;
-}> {
-  const supabase = await createServerClient();
-  const now = new Date();
-  const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  // ISO tanggal lokal (YYYY-MM-01) tanpa geser timezone.
-  const from = `${firstOfMonth.getFullYear()}-${String(
-    firstOfMonth.getMonth() + 1,
-  ).padStart(2, "0")}-01`;
-  const monthLabel = now.toLocaleDateString("id-ID", {
-    month: "long",
-    year: "numeric",
-  });
-
-  const { data } = await supabase
-    .from("stock_purchases")
-    .select("total_bayar")
-    .gte("tanggal", from)
-    .limit(2000);
-  const rows = data ?? [];
-  const total = rows.reduce((s, r) => s + Number(r.total_bayar), 0);
-  return { total, count: rows.length, monthLabel };
-}

@@ -19,6 +19,7 @@ export type ProductInput = {
   // dari form baru; data lamanya tetap utuh di DB (backward compatibility).
   detail?: {
     stok: number | null;
+    stok_minimum: number | null;
     faq: FaqItem[] | null;
     deskripsi: string | null;
     masa_berlaku: string | null;

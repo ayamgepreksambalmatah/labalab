@@ -146,3 +146,77 @@ export async function getCompilation(): Promise<Compilation> {
     produkTerbaik,
   };
 }
+
+export type RestockItem = {
+  id: string;
+  nama: string;
+  stok: number;
+  stok_minimum: number;
+  harga_supplier: number | null;
+};
+
+/**
+ * Produk yang stoknya <= stok_minimum (perlu restock). Hanya yang stoknya
+ * di-track (bukan null). Diurutkan dari stok paling sedikit (paling kritis).
+ */
+export async function getRestockAlerts(): Promise<RestockItem[]> {
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("products")
+    .select("id, nama, stok, stok_minimum, harga_supplier")
+    .not("stok", "is", null);
+  return (data ?? [])
+    .map((p) => ({
+      id: p.id as string,
+      nama: p.nama as string,
+      stok: Number(p.stok),
+      stok_minimum: p.stok_minimum == null ? 10 : Number(p.stok_minimum),
+      harga_supplier: p.harga_supplier == null ? null : Number(p.harga_supplier),
+    }))
+    .filter((p) => p.stok <= p.stok_minimum)
+    .sort((a, b) => a.stok - b.stok);
+}
+
+export type CashFlow = {
+  modalKeluar: number;
+  profitMasuk: number;
+  net: number;
+  monthLabel: string;
+  hasData: boolean;
+};
+
+/**
+ * Posisi kas bulan berjalan: modal keluar (beli stok) vs profit masuk
+ * (penjualan 'selesai'). Net bisa minus (wajar saat investasi stok).
+ */
+export async function getMonthlyCashFlow(): Promise<CashFlow> {
+  const supabase = await createServerClient();
+  const now = new Date();
+  const from = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  const monthLabel = now.toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const [purchases, sales] = await Promise.all([
+    supabase.from("stock_purchases").select("total_bayar").gte("tanggal", from).limit(3000),
+    supabase
+      .from("sales_transactions")
+      .select("profit")
+      .eq("status", "selesai")
+      .gte("tanggal", from)
+      .limit(5000),
+  ]);
+  const pr = purchases.data ?? [];
+  const sl = sales.data ?? [];
+  const modalKeluar = pr.reduce((s, r) => s + Number(r.total_bayar), 0);
+  const profitMasuk = sl.reduce((s, r) => s + Number(r.profit), 0);
+
+  return {
+    modalKeluar,
+    profitMasuk,
+    net: profitMasuk - modalKeluar,
+    monthLabel,
+    hasData: pr.length > 0 || sl.length > 0,
+  };
+}

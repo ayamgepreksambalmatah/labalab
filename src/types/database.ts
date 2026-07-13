@@ -84,6 +84,7 @@ export interface Database {
           harga: number;
           modal: number;
           stok: number | null;
+          stok_minimum: number | null;
           ukuran_tersedia: string[] | null;
           faq: Json | null;
           garansi: string | null;
@@ -111,6 +112,7 @@ export interface Database {
           harga?: number;
           modal?: number;
           stok?: number | null;
+          stok_minimum?: number | null;
           ukuran_tersedia?: string[] | null;
           faq?: Json | null;
           garansi?: string | null;
