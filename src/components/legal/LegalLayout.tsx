@@ -15,10 +15,12 @@ export function LegalLayout({
   title,
   intro,
   children,
+  lastUpdated = LEGAL_CONTACT.lastUpdated,
 }: {
   title: string;
   intro: ReactNode;
   children: ReactNode;
+  lastUpdated?: string;
 }) {
   return (
     <main className="mx-auto max-w-2xl px-5 py-14">
@@ -29,7 +31,7 @@ export function LegalLayout({
         {title}
       </h1>
       <p className="mt-1 text-[12px] text-muted">
-        Terakhir diperbarui: {LEGAL_CONTACT.lastUpdated}
+        Terakhir diperbarui: {lastUpdated}
       </p>
 
       <p className="mt-3 rounded-[10px] border border-border bg-surface2 px-3.5 py-2.5 text-[12px] leading-relaxed text-muted">
