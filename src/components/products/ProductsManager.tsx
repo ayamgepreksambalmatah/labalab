@@ -12,6 +12,13 @@ import {
 } from "@/lib/calc/profit";
 import { suggestionsFor } from "@/lib/products/category-attribute-suggestions";
 import type { AtributKhusus } from "@/lib/products/knowledge";
+import {
+  STOCK_STATUS_DEFAULT,
+  STOCK_STATUS_META,
+  STOCK_STATUS_OPTIONS,
+  normalizeStockStatus,
+  type StockStatus,
+} from "@/lib/products/stock-status";
 import { fmt } from "@/lib/format";
 import { PLAN_LIMITS } from "@/lib/plans";
 import {
@@ -62,6 +69,7 @@ type FormState = {
   hargaSupplier: number | "";
   linkSupplier: string;
   kontakSupplier: string;
+  statusStokSupplier: StockStatus;
 };
 
 /** Baris atribut awal (saran per kategori, nilai kosong + contoh placeholder). */
@@ -90,6 +98,7 @@ const emptyForm: FormState = {
   hargaSupplier: "",
   linkSupplier: "",
   kontakSupplier: "",
+  statusStokSupplier: STOCK_STATUS_DEFAULT,
 };
 
 function productToForm(p: Product): FormState {
@@ -118,6 +127,7 @@ function productToForm(p: Product): FormState {
     hargaSupplier: p.harga_supplier ?? "",
     linkSupplier: p.link_supplier ?? "",
     kontakSupplier: p.kontak_supplier ?? "",
+    statusStokSupplier: normalizeStockStatus(p.status_stok_supplier),
   };
 }
 
@@ -154,6 +164,7 @@ function formToInput(form: FormState): ProductInput {
       harga_supplier: form.hargaSupplier === "" ? null : Number(form.hargaSupplier),
       link_supplier: form.linkSupplier.trim() || null,
       kontak_supplier: form.kontakSupplier.trim() || null,
+      status_stok_supplier: form.statusStokSupplier,
     },
   };
 }
@@ -435,6 +446,13 @@ export function ProductsManager({
                 <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted">
                   Info Supplier (opsional)
                 </p>
+                <Field label="Status Stok Supplier" hint="update manual saat cek ke supplier">
+                  <SelectInput
+                    value={form.statusStokSupplier}
+                    onChange={(v) => set({ statusStokSupplier: v })}
+                    options={STOCK_STATUS_OPTIONS}
+                  />
+                </Field>
                 <Field label="Harga Supplier">
                   <MoneyInput
                     value={form.hargaSupplier || ""}
@@ -565,16 +583,25 @@ export function ProductsManager({
                   const { profit, margin } = marginOf(p);
                   const color =
                     margin >= 20 ? "text-green" : margin >= 5 ? "text-yellow" : "text-red";
+                  const stok = STOCK_STATUS_META[normalizeStockStatus(p.status_stok_supplier)];
                   return (
                     <div key={p.id} className="border-b border-border py-3.5 last:border-b-0">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="truncate text-[14px] font-semibold">
-                            {PLATFORM_ICON[p.platform]} {p.nama}
-                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${stok.dot}`}
+                              title={`Stok supplier: ${stok.label}`}
+                            />
+                            <p className="truncate text-[14px] font-semibold">
+                              {PLATFORM_ICON[p.platform]} {p.nama}
+                            </p>
+                          </div>
                           <p className="mt-0.5 text-[12px] text-muted">
                             {fmt(p.harga)} · modal {fmt(p.modal)} · {p.kategori}
                             {p.stok != null && ` · stok ${p.stok}`}
+                            {" · "}
+                            <span className={stok.text}>{stok.label}</span>
                           </p>
                         </div>
                         <div className="shrink-0 text-right">

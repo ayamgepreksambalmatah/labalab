@@ -29,6 +29,7 @@ export type ProductInput = {
     harga_supplier: number | null;
     link_supplier: string | null;
     kontak_supplier: string | null;
+    status_stok_supplier: string;
   };
 };
 

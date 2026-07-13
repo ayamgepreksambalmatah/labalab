@@ -98,6 +98,7 @@ export interface Database {
           harga_supplier: number | null;
           link_supplier: string | null;
           kontak_supplier: string | null;
+          status_stok_supplier: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -124,6 +125,7 @@ export interface Database {
           harga_supplier?: number | null;
           link_supplier?: string | null;
           kontak_supplier?: string | null;
+          status_stok_supplier?: string | null;
           created_at?: string;
           updated_at?: string;
         };
