@@ -360,6 +360,40 @@ export interface Database {
         >;
         Relationships: [];
       };
+      stock_purchases: {
+        Row: {
+          id: string;
+          user_id: string;
+          product_id: string | null;
+          nama_produk: string;
+          tanggal: string;
+          qty_dibeli: number;
+          total_bayar: number;
+          harga_per_unit: number;
+          added_to_stock: boolean;
+          updated_supplier_price: boolean;
+          catatan: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          product_id?: string | null;
+          nama_produk: string;
+          tanggal: string;
+          qty_dibeli?: number;
+          total_bayar?: number;
+          harga_per_unit?: number;
+          added_to_stock?: boolean;
+          updated_supplier_price?: boolean;
+          catatan?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["stock_purchases"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {

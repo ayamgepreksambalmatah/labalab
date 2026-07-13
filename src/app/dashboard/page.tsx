@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolvePlan } from "@/lib/plans";
 import { getCompilation, getSalesSummary } from "@/lib/products/dashboard";
+import { getMonthlyStockSpend } from "@/lib/products/stockPurchases";
 import { fmt } from "@/lib/format";
 
 const PLATFORM_META: Record<string, { emoji: string; label: string }> = {
@@ -83,7 +84,11 @@ export default async function DashboardPage({
   const displayName = profile?.full_name || profile?.email || "Seller";
   const isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
   const { upgrade } = await searchParams;
-  const [comp, summary] = await Promise.all([getCompilation(), getSalesSummary()]);
+  const [comp, summary, stockSpend] = await Promise.all([
+    getCompilation(),
+    getSalesSummary(),
+    getMonthlyStockSpend(),
+  ]);
 
   return (
     <div>
@@ -119,6 +124,22 @@ export default async function DashboardPage({
           {isPro ? "Pro" : "Free"}
         </span>
       </div>
+
+      {stockSpend.count > 0 && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-card border border-border bg-surface p-5">
+          <div>
+            <p className="text-[10.5px] font-bold uppercase tracking-wider text-muted">
+              📦 Modal Dikeluarkan Bulan Ini
+            </p>
+            <p className="mt-1 font-display text-[22px] font-extrabold text-yellow">
+              {fmt(stockSpend.total)}
+            </p>
+          </div>
+          <p className="text-[12px] text-muted">
+            {stockSpend.count} pembelian stok · {stockSpend.monthLabel}
+          </p>
+        </div>
+      )}
 
       {summary.hasTransactions ? (
         <div className="mt-8">

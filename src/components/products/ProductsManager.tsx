@@ -27,6 +27,7 @@ import {
   deleteProduct,
   type ProductInput,
 } from "@/lib/products/actions";
+import { BuyStockForm } from "@/components/products/BuyStockForm";
 import {
   Card,
   Field,
@@ -181,6 +182,7 @@ export function ProductsManager({
   const [form, setForm] = useState<FormState>(emptyForm);
   const [tab, setTab] = useState<"dasar" | "detail">("dasar");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [buyStockFor, setBuyStockFor] = useState<Product | null>(null);
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const limit = PLAN_LIMITS[plan].savedProducts;
@@ -617,6 +619,13 @@ export function ProductsManager({
                         <QuickLink href={`/dashboard/products/${p.id}/history`} label="📜 History" />
                         <button
                           type="button"
+                          onClick={() => setBuyStockFor(p)}
+                          className="rounded-md border border-border bg-surface2 px-2.5 py-1 text-[11.5px] font-semibold text-muted hover:text-accent2"
+                        >
+                          📦 Beli Stok
+                        </button>
+                        <button
+                          type="button"
                           onClick={() => startEdit(p)}
                           className="rounded-md border border-border bg-surface2 px-2.5 py-1 text-[11.5px] font-semibold text-muted hover:text-text"
                         >
@@ -642,6 +651,21 @@ export function ProductsManager({
           </p>
         </div>
       </div>
+
+      {buyStockFor && (
+        <BuyStockForm
+          productId={buyStockFor.id}
+          nama={buyStockFor.nama}
+          currentStok={buyStockFor.stok}
+          currentHargaSupplier={buyStockFor.harga_supplier}
+          onDone={() => {
+            setBuyStockFor(null);
+            setStatus({ msg: "✓ Pembelian stok tercatat", ok: true });
+            router.refresh();
+          }}
+          onCancel={() => setBuyStockFor(null)}
+        />
+      )}
     </div>
   );
 }
