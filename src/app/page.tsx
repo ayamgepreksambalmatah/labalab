@@ -56,7 +56,11 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Platform apa saja yang didukung?",
-    a: "Shopee, Tokopedia, dan TikTok Shop.",
+    a: "Shopee, Tokopedia, dan TikTok Shop. Kamu juga bisa mencatat penjualan dari luar marketplace (mis. Instagram atau PO) secara manual.",
+  },
+  {
+    q: "Apa bedanya paket Free, Pro, dan Max?",
+    a: "Paket Free gratis selamanya dengan kuota terbatas dan bisa simpan 3 produk — pas untuk coba-coba. Pro menaikkan kuota bulanan dan produk jadi tak terbatas. Max memberi Sales Analyzer & Product Doctor tanpa batas plus dukungan multi-toko. Lengkapnya ada di bagian Harga di atas, dan bisa upgrade kapan saja.",
   },
   {
     q: "Apakah cocok untuk seller makanan?",
@@ -65,6 +69,18 @@ const FAQS: { q: string; a: string }[] = [
   {
     q: "Bagaimana kalau saya mau berhenti berlangganan?",
     a: "Bisa dibatalkan kapan saja. Kamu tetap punya akses sampai periode aktif habis, tanpa pengembalian dana untuk sisa periode (lihat Syarat & Ketentuan).",
+  },
+  {
+    q: "Bisakah saya mengekspor data penjualan saya?",
+    a: "Bisa. Semua transaksi — baik dari upload laporan marketplace maupun catatan manual — bisa kamu ekspor ke file Excel kapan saja lewat halaman Laporan Detail.",
+  },
+  {
+    q: "Apakah tim LabaLab bisa melihat harga & margin toko saya?",
+    a: "Tidak untuk kepentingan pribadi. Secara teknis tim kami bisa mengakses database untuk pemeliharaan sistem dan perbaikan bug, tapi kami berkomitmen tidak melihat, menyalin, atau memakai data harga, margin, dan supplier kamu. Selengkapnya di Kebijakan Privasi.",
+  },
+  {
+    q: "Apakah data kartu atau rekening pembayaran saya disimpan?",
+    a: "Tidak. Pembayaran diproses langsung oleh mitra resmi (Midtrans) — LabaLab tidak pernah menyimpan nomor kartu atau rekening kamu.",
   },
   {
     q: "Apakah saya perlu install aplikasi?",
