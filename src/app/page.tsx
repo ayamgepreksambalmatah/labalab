@@ -6,6 +6,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import { fmt } from "@/lib/format";
 import { PRO_PRICE_IDR, MAX_PRICE_IDR } from "@/lib/plans";
 import { LEGAL_CONTACT } from "@/components/legal/LegalLayout";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 
 export const metadata: Metadata = {
   description:
@@ -71,6 +72,69 @@ const FAQS: { q: string; a: string }[] = [
   },
 ];
 
+// Structured data (JSON-LD) untuk rich result Google: identitas situs,
+// aplikasi + harga paket, dan FAQ (reuse array FAQS di atas).
+const OG_IMAGE = `${SITE_URL}/opengraph-image`;
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      logo: OG_IMAGE,
+      image: OG_IMAGE,
+      description: SITE_DESCRIPTION,
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: LEGAL_CONTACT.email,
+        url: LEGAL_CONTACT.whatsapp,
+        availableLanguage: ["Indonesian"],
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      inLanguage: "id-ID",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+    },
+    {
+      "@type": "SoftwareApplication",
+      name: SITE_NAME,
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: SITE_URL,
+      description: SITE_DESCRIPTION,
+      offers: {
+        "@type": "AggregateOffer",
+        priceCurrency: "IDR",
+        lowPrice: "0",
+        highPrice: String(MAX_PRICE_IDR),
+        offerCount: "3",
+        offers: [
+          { "@type": "Offer", name: "Coba Gratis", price: "0", priceCurrency: "IDR" },
+          { "@type": "Offer", name: "LabaLab Pro", price: String(PRO_PRICE_IDR), priceCurrency: "IDR" },
+          { "@type": "Offer", name: "LabaLab Max", price: String(MAX_PRICE_IDR), priceCurrency: "IDR" },
+        ],
+      },
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${SITE_URL}/#faq`,
+      mainEntity: FAQS.map((f) => ({
+        "@type": "Question",
+        name: f.q,
+        acceptedAnswer: { "@type": "Answer", text: f.a },
+      })),
+    },
+  ],
+};
+
 export default async function Home() {
   const supabase = await createServerClient();
   const { data: claims } = await supabase.auth.getClaims();
@@ -78,6 +142,10 @@ export default async function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-5 pb-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       {/* NAV */}
       <nav className="flex items-center justify-between py-5">
         <Logo size={24} />
