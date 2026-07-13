@@ -7,7 +7,7 @@ export const LEGAL_CONTACT = {
   legalEntity: "LabaLab", // ganti ke nama badan usaha resmi (mis. PT/CV) kalau ada
   domain: "labalab.id",
   email: "support@labalab.id",
-  whatsapp: "https://wa.me/6281234567890",
+  whatsapp: "https://wa.me/6288210686170",
   lastUpdated: "6 Juli 2026",
 };
 
