@@ -139,6 +139,28 @@ Jalankan di Supabase SQL editor atau `supabase db push`.
   (bukan lagi single {judul,deskripsi,...}) — gaya per platform di `LISTING_PLATFORM_STYLE`
   (prompts.ts). Route validasi `platforms[]`, UI tampilkan hasil per tab platform.
 
+## Unified dashboard (spec labalab-unified-dashboard-spec) — selesai
+- Migration WAJIB: `0012_sales_transactions.sql` (tabel transaksi per-baris multi-channel + RLS).
+- Bagian 1 ✅ Auto-hitung margin di "Cek Untung Asli" — sudah reaktif via `useMemo`
+  (`ProfitChecker.tsx`), tanpa tombol. Diverifikasi, tak perlu ubah.
+- Bagian 2 ✅ Sales Analyzer upload juga simpan tiap baris ke `sales_transactions`
+  (bukan cuma agregat). Parser `salesFile.ts` kembalikan `transactions[]` (deteksi kolom
+  tanggal + `mapStatus`), route `sales-analyzer` insert per-chunk (sumber='upload',
+  product_id via exact-match nama). Selektor platform di `SalesAnalyzer.tsx`.
+- Bagian 3 ✅ Halaman `/dashboard/laporan` (Laporan Detail): tabel semua transaksi
+  (upload + manual) — filter tanggal/platform/status/cari (via URL searchParams → query
+  ulang server, totals akurat atas set terfilter), header sortable + pagination 50/hal
+  (client), Export Excel (SheetJS). Query: `src/lib/products/transactions.ts`. Tombol
+  "+ Catat Penjualan Manual" → `ManualEntryForm.tsx` (auto-fill dari Produk Saya, tetap
+  editable; Instagram/Lainnya nol-kan biaya platform). Actions: `transactionActions.ts`
+  (`addManualTransaction` sumber='manual', `deleteTransaction` khusus baris manual).
+  Menu sidebar "📋 Laporan Detail".
+- Bagian 4 ✅ Dashboard `/dashboard` agregasi dari `sales_transactions` (SEMUA channel,
+  `getSalesSummary` di `dashboard.ts`, di-paginate 1000/batch, batal & refund dikeluarkan
+  dari omzet/profit) — kartu Omzet/Profit/Margin/Unit + kartu "Breakdown per Platform"
+  (bar % share omzet per platform). Section per-produk lama (history) tetap ada sebagai
+  "Performa per Produk". Empty-state kalau belum ada transaksi.
+
 ## Commands
 - `npm run dev` — dev server
 - `npm run build` — production build (jalankan sebelum anggap selesai)

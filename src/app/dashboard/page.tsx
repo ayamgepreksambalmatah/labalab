@@ -3,8 +3,16 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { resolvePlan } from "@/lib/plans";
-import { getCompilation } from "@/lib/products/dashboard";
+import { getCompilation, getSalesSummary } from "@/lib/products/dashboard";
 import { fmt } from "@/lib/format";
+
+const PLATFORM_META: Record<string, { emoji: string; label: string }> = {
+  shopee: { emoji: "🟠", label: "Shopee" },
+  tokopedia: { emoji: "🟢", label: "Tokopedia" },
+  tiktok: { emoji: "🎵", label: "TikTok" },
+  instagram: { emoji: "📸", label: "Instagram" },
+  lainnya: { emoji: "🏷️", label: "Lainnya" },
+};
 
 export const metadata: Metadata = {
   title: "Ringkasan",
@@ -75,7 +83,7 @@ export default async function DashboardPage({
   const displayName = profile?.full_name || profile?.email || "Seller";
   const isPro = resolvePlan(profile?.plan, profile?.plan_expires_at) === "pro";
   const { upgrade } = await searchParams;
-  const comp = await getCompilation();
+  const [comp, summary] = await Promise.all([getCompilation(), getSalesSummary()]);
 
   return (
     <div>
@@ -112,25 +120,84 @@ export default async function DashboardPage({
         </span>
       </div>
 
+      {summary.hasTransactions ? (
+        <div className="mt-8">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h2 className="font-display text-[15px] font-bold">
+              📊 Ringkasan Penjualan (semua channel)
+            </h2>
+            <Link
+              href="/dashboard/laporan"
+              className="shrink-0 text-[12px] font-semibold text-accent2 hover:underline"
+            >
+              Lihat Laporan Detail →
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <StatBox label="Total Omzet" value={fmt(summary.totalOmzet)} />
+            <StatBox
+              label="Total Profit"
+              value={fmt(summary.totalProfit)}
+              color={summary.totalProfit >= 0 ? "text-green" : "text-red"}
+            />
+            <StatBox label="Margin" value={`${summary.margin.toFixed(1)}%`} />
+            <StatBox label="Unit Terjual" value={String(summary.totalUnit)} />
+          </div>
+
+          <div className="mt-3 rounded-card border border-border bg-surface p-4">
+            <p className="mb-3 text-[11px] font-bold uppercase tracking-wider text-muted">
+              Breakdown per Platform
+            </p>
+            <ul className="space-y-2.5">
+              {summary.byPlatform.map((p) => {
+                const m = PLATFORM_META[p.platform] ?? { emoji: "🏷️", label: p.platform };
+                return (
+                  <li key={p.platform}>
+                    <div className="flex items-center justify-between gap-2 text-[13px]">
+                      <span className="font-medium">
+                        {m.emoji} {m.label}
+                      </span>
+                      <span className="shrink-0 text-muted">
+                        <b className="text-text">{fmt(p.omzet)}</b>{" "}
+                        <span className="tabular-nums">({p.pct.toFixed(0)}%)</span>
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-surface2">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-accent to-accent2"
+                        style={{ width: `${Math.max(2, p.pct)}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8 rounded-card border border-dashed border-border bg-surface p-6 text-center">
+          <p className="font-display text-[15px] font-bold">Belum ada data penjualan</p>
+          <p className="mx-auto mt-1 max-w-md text-[12.5px] leading-relaxed text-muted">
+            Upload laporan di{" "}
+            <Link href="/dashboard/analyzer" className="font-semibold text-accent2 hover:underline">
+              Sales Analyzer
+            </Link>{" "}
+            atau catat penjualan Instagram/PO manual di{" "}
+            <Link href="/dashboard/laporan" className="font-semibold text-accent2 hover:underline">
+              Laporan Detail
+            </Link>{" "}
+            untuk melihat ringkasan profit semua channel di sini.
+          </p>
+        </div>
+      )}
+
       {comp.hasHistory && (
         <div className="mt-8">
           <h2 className="mb-3 font-display text-[15px] font-bold">
-            Ringkasan Toko (dari history)
+            Performa per Produk (dari history)
           </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <StatBox label="Total Produk" value={String(comp.totalProduk)} />
-            <StatBox
-              label="Total Profit"
-              value={fmt(comp.totalProfitAllTime)}
-              color={comp.totalProfitAllTime >= 0 ? "text-green" : "text-red"}
-            />
-            <StatBox
-              label="Margin Rata-rata"
-              value={`${comp.marginRataRata.toFixed(1)}%`}
-            />
-          </div>
 
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-card border border-border bg-surface p-4">
               <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-green">
                 Produk Terbaik
