@@ -4,12 +4,19 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { fmt } from "@/lib/format";
 import { DEMO_SALES_PRODUCTS, type SalesAnalysis, type SalesProduct } from "@/lib/calc/sales";
-import { parseSalesFile } from "@/lib/parse/salesFile";
+import { parseSalesFile, type ParsedTransaction } from "@/lib/parse/salesFile";
 import type { SalesAiResult } from "@/lib/ai/prompts";
+import type { Platform } from "@/types/database";
 import { Card } from "@/components/tools/controls";
 import { SalesDetailTable } from "@/components/tools/SalesDetailTable";
 
 type View = "upload" | "loading" | "result" | "error";
+
+const PLATFORM_OPTS: { value: Platform; label: string }[] = [
+  { value: "shopee", label: "🟠 Shopee" },
+  { value: "tokopedia", label: "🟢 Tokopedia" },
+  { value: "tiktok", label: "🎵 TikTok Shop" },
+];
 
 export function SalesAnalyzer() {
   const [view, setView] = useState<View>("upload");
@@ -18,10 +25,17 @@ export function SalesAnalyzer() {
   const [limitReached, setLimitReached] = useState(false);
   const [analysis, setAnalysis] = useState<SalesAnalysis | null>(null);
   const [ai, setAi] = useState<SalesAiResult | null>(null);
+  const [savedTx, setSavedTx] = useState(0);
+  const [platform, setPlatform] = useState<Platform>("shopee");
   const fileRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  async function run(products: SalesProduct[], sourceLabel: string) {
+  async function run(
+    products: SalesProduct[],
+    sourceLabel: string,
+    transactions: ParsedTransaction[] = [],
+    sourcePlatform: Platform = "shopee",
+  ) {
     setView("loading");
     setLoadingStep("AI sedang menyusun rekomendasi…");
     setLimitReached(false);
@@ -29,7 +43,12 @@ export function SalesAnalyzer() {
       const res = await fetch("/api/ai/sales-analyzer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ products, sourceLabel }),
+        body: JSON.stringify({
+          products,
+          sourceLabel,
+          transactions,
+          platform: sourcePlatform,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -40,6 +59,7 @@ export function SalesAnalyzer() {
       }
       setAnalysis(data.analysis);
       setAi(data.ai);
+      setSavedTx(data.savedTransactions ?? 0);
       setView("result");
       router.refresh(); // update QuotaBar (server) dengan pemakaian terbaru
     } catch {
@@ -54,8 +74,8 @@ export function SalesAnalyzer() {
     setView("loading");
     setLoadingStep("Membaca file…");
     try {
-      const { products } = await parseSalesFile(file);
-      await run(products, file.name);
+      const { products, transactions } = await parseSalesFile(file);
+      await run(products, file.name, transactions, platform);
     } catch (err) {
       setError(err instanceof Error ? err.message : "File tidak bisa diproses.");
       setView("error");
@@ -102,6 +122,15 @@ export function SalesAnalyzer() {
   if (view === "result" && analysis && ai) {
     return (
       <div>
+        {savedTx > 0 && (
+          <div className="mb-4 rounded-card border border-green/40 bg-green/10 px-4 py-2.5 text-[12.5px] text-green">
+            ✓ {savedTx} transaksi tersimpan ke{" "}
+            <a href="/dashboard/laporan" className="font-semibold underline">
+              Laporan Detail
+            </a>
+            .
+          </div>
+        )}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Metric label="Total Omzet" value={fmt(analysis.totalOmzet)} />
           <Metric
@@ -159,12 +188,33 @@ export function SalesAnalyzer() {
 
   // upload
   return (
-    <div
-      className="rounded-card border border-dashed border-border bg-surface p-12 text-center transition-colors hover:border-accent/50"
-      onClick={() => fileRef.current?.click()}
-      role="button"
-    >
-      <div className="text-4xl">📊</div>
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2.5 rounded-card border border-border bg-surface px-4 py-3">
+        <span className="text-[12.5px] font-semibold text-muted">
+          Platform sumber laporan:
+        </span>
+        <select
+          value={platform}
+          onChange={(e) => setPlatform(e.target.value as Platform)}
+          className="rounded-[9px] border border-border bg-surface2 px-3 py-1.5 text-[13px] text-text outline-none focus:border-accent"
+        >
+          {PLATFORM_OPTS.map((o) => (
+            <option key={o.value} value={o.value} className="bg-surface2">
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <span className="text-[11.5px] text-muted">
+          (dipakai untuk mencatat tiap transaksi ke Laporan Detail)
+        </span>
+      </div>
+
+      <div
+        className="rounded-card border border-dashed border-border bg-surface p-12 text-center transition-colors hover:border-accent/50"
+        onClick={() => fileRef.current?.click()}
+        role="button"
+      >
+        <div className="text-4xl">📊</div>
       <p className="mt-3 font-display text-base font-bold">Upload Laporan Penjualan</p>
       <p className="mt-1 text-[13px] text-muted">
         File Excel/CSV dari Shopee, Tokopedia, atau TikTok Shop Seller Center
@@ -197,6 +247,7 @@ export function SalesAnalyzer() {
         >
           Belum punya file? Coba data contoh →
         </button>
+      </div>
       </div>
     </div>
   );

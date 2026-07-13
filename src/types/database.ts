@@ -314,6 +314,50 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["usage_logs"]["Insert"]>;
         Relationships: [];
       };
+      sales_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          product_id: string | null;
+          sales_report_id: string | null;
+          tanggal: string;
+          nama_produk: string;
+          platform: string;
+          qty: number;
+          harga_satuan: number;
+          omzet: number;
+          biaya_platform: number;
+          modal: number;
+          profit: number;
+          status: string | null;
+          sumber: string;
+          catatan: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          product_id?: string | null;
+          sales_report_id?: string | null;
+          tanggal: string;
+          nama_produk: string;
+          platform: string;
+          qty?: number;
+          harga_satuan?: number;
+          omzet?: number;
+          biaya_platform?: number;
+          modal?: number;
+          profit?: number;
+          status?: string | null;
+          sumber?: string;
+          catatan?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<
+          Database["public"]["Tables"]["sales_transactions"]["Insert"]
+        >;
+        Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {

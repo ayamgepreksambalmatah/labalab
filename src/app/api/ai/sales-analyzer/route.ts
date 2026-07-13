@@ -26,6 +26,46 @@ function sanitizeProducts(raw: unknown): SalesProduct[] {
     .slice(0, 200); // batasi agar prompt tidak membengkak
 }
 
+const VALID_PLATFORMS = ["shopee", "tokopedia", "tiktok", "instagram", "lainnya"];
+const VALID_STATUS = ["selesai", "batal", "refund", "pending"];
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+type TxInput = {
+  tanggal: string;
+  nama_produk: string;
+  qty: number;
+  harga_satuan: number;
+  omzet: number;
+  biaya_platform: number;
+  modal: number;
+  profit: number;
+  status: string;
+};
+
+function sanitizeTransactions(raw: unknown): TxInput[] {
+  if (!Array.isArray(raw)) return [];
+  const today = new Date().toISOString().slice(0, 10);
+  return raw
+    .map((t) => {
+      const r = t as Record<string, unknown>;
+      const tanggal = String(r.tanggal ?? "");
+      const status = String(r.status ?? "selesai");
+      return {
+        tanggal: ISO_DATE.test(tanggal) ? tanggal : today,
+        nama_produk: String(r.nama_produk ?? "").slice(0, 200),
+        qty: Math.round(Number(r.qty) || 1),
+        harga_satuan: Number(r.harga_satuan) || 0,
+        omzet: Number(r.omzet) || 0,
+        biaya_platform: Number(r.biaya_platform) || 0,
+        modal: Number(r.modal) || 0,
+        profit: Number(r.profit) || 0,
+        status: VALID_STATUS.includes(status) ? status : "selesai",
+      };
+    })
+    .filter((t) => t.nama_produk && t.omzet > 0)
+    .slice(0, 3000);
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createServerClient();
   const {
@@ -36,7 +76,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Parse & validasi body dulu (murah) supaya request invalid tak makan kuota.
-  let body: { products?: unknown; sourceLabel?: unknown };
+  let body: {
+    products?: unknown;
+    sourceLabel?: unknown;
+    transactions?: unknown;
+    platform?: unknown;
+  };
   try {
     body = await req.json();
   } catch {
@@ -44,6 +89,10 @@ export async function POST(req: NextRequest) {
   }
 
   const products = sanitizeProducts(body.products);
+  const transactions = sanitizeTransactions(body.transactions);
+  const platform = VALID_PLATFORMS.includes(String(body.platform))
+    ? String(body.platform)
+    : "shopee";
   const sourceLabel = String(body.sourceLabel ?? "Laporan").slice(0, 120);
   if (products.length === 0) {
     return NextResponse.json(
@@ -105,6 +154,7 @@ export async function POST(req: NextRequest) {
   // dengan Produk Saya. Fuzzy match sengaja tidak auto-link agar tidak salah
   // attribusi — user cukup "Simpan ke Produk Saya", upload berikutnya nyambung.
   let linkedHistory = 0;
+  let savedTransactions = 0;
   if (report) {
     const { data: myProducts } = await supabase
       .from("products")
@@ -135,7 +185,38 @@ export async function POST(req: NextRequest) {
       await supabase.from("product_sales_history").insert(rows);
       linkedHistory = rows.length;
     }
+
+    // Simpan tiap transaksi per-baris ke sales_transactions (detail harian).
+    if (transactions.length) {
+      const txRows = transactions.map((t) => ({
+        user_id: user.id,
+        product_id: byName.get(t.nama_produk.trim().toLowerCase()) ?? null,
+        sales_report_id: report.id,
+        tanggal: t.tanggal,
+        nama_produk: t.nama_produk,
+        platform,
+        qty: t.qty,
+        harga_satuan: t.harga_satuan,
+        omzet: t.omzet,
+        biaya_platform: t.biaya_platform,
+        modal: t.modal,
+        profit: t.profit,
+        status: t.status,
+        sumber: "upload",
+      }));
+      // Insert per-chunk agar payload DB tidak terlalu besar.
+      for (let i = 0; i < txRows.length; i += 500) {
+        const { error } = await supabase
+          .from("sales_transactions")
+          .insert(txRows.slice(i, i + 500));
+        if (error) {
+          console.error("insert sales_transactions error:", error.message);
+          break;
+        }
+        savedTransactions += Math.min(500, txRows.length - i);
+      }
+    }
   }
 
-  return NextResponse.json({ analysis, ai, linkedHistory });
+  return NextResponse.json({ analysis, ai, linkedHistory, savedTransactions });
 }
