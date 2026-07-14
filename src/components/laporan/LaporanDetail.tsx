@@ -7,6 +7,7 @@ import { fmt } from "@/lib/format";
 import type { Transaction, TxFilters, TxTotals } from "@/lib/products/transactions";
 import { deleteTransaction } from "@/lib/products/transactionActions";
 import { ManualEntryForm, type PickProduct } from "@/components/laporan/ManualEntryForm";
+import { EditTransactionForm } from "@/components/laporan/EditTransactionForm";
 
 const PLATFORM_META: Record<string, { emoji: string; label: string }> = {
   shopee: { emoji: "🟠", label: "Shopee" },
@@ -65,6 +66,7 @@ export function LaporanDetail({
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [page, setPage] = useState(0);
   const [showManual, setShowManual] = useState(false);
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   function applyFilters() {
@@ -268,7 +270,7 @@ export function LaporanDetail({
               <Th onClick={() => toggleSort("omzet")} active={sortKey === "omzet"} dir={sortDir} right>Omzet</Th>
               <Th onClick={() => toggleSort("profit")} active={sortKey === "profit"} dir={sortDir} right>Profit</Th>
               <th className="px-3 py-2.5">Status</th>
-              <th className="px-3 py-2.5"></th>
+              <th className="px-3 py-2.5 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -306,13 +308,21 @@ export function LaporanDetail({
                         {sm.label}
                       </span>
                     </td>
-                    <td className="px-3 py-2.5 text-right">
+                    <td className="whitespace-nowrap px-3 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setEditTx(t)}
+                        className="text-[13px] text-muted hover:text-accent2"
+                        title="Edit transaksi"
+                      >
+                        ✏️
+                      </button>
                       {t.sumber === "manual" && (
                         <button
                           type="button"
                           onClick={() => onDelete(t.id)}
                           disabled={deletingId === t.id}
-                          className="text-[12px] text-muted hover:text-red disabled:opacity-40"
+                          className="ml-2.5 text-[12px] text-muted hover:text-red disabled:opacity-40"
                           title="Hapus transaksi manual"
                         >
                           ✕
@@ -350,6 +360,17 @@ export function LaporanDetail({
             Berikutnya →
           </button>
         </div>
+      )}
+
+      {editTx && (
+        <EditTransactionForm
+          tx={editTx}
+          onDone={() => {
+            setEditTx(null);
+            startTransition(() => router.refresh());
+          }}
+          onCancel={() => setEditTx(null)}
+        />
       )}
     </div>
   );

@@ -66,3 +66,70 @@ export async function getTransactions(
 
   return { rows, totals, truncated: rows.length >= MAX_ROWS };
 }
+
+export type MonthlyPoint = {
+  month: string; // YYYY-MM
+  omzet: number;
+  profit: number;
+  unit: number;
+  margin: number;
+};
+
+export type ProductSales = {
+  transactions: Transaction[];
+  monthly: MonthlyPoint[];
+  totals: { omzet: number; profit: number; unit: number; margin: number };
+};
+
+/**
+ * Riwayat jualan sebuah produk dari sales_transactions (bukan lagi
+ * product_sales_history). Angka omzet/profit/unit mengecualikan transaksi
+ * batal & refund; monthly = agregat per bulan (urut lama → baru) untuk chart.
+ */
+export async function getProductSales(productId: string): Promise<ProductSales> {
+  const supabase = await createServerClient();
+  const { data } = await supabase
+    .from("sales_transactions")
+    .select(COLUMNS)
+    .eq("product_id", productId)
+    .order("tanggal", { ascending: false })
+    .limit(MAX_ROWS);
+  const transactions = (data ?? []) as Transaction[];
+
+  const realized = transactions.filter(
+    (t) => t.status !== "batal" && t.status !== "refund",
+  );
+  const totOmzet = realized.reduce((s, t) => s + Number(t.omzet), 0);
+  const totProfit = realized.reduce((s, t) => s + Number(t.profit), 0);
+  const totUnit = realized.reduce((s, t) => s + Number(t.qty), 0);
+
+  const map = new Map<string, { omzet: number; profit: number; unit: number }>();
+  for (const t of realized) {
+    const month = t.tanggal.slice(0, 7);
+    const cur = map.get(month) ?? { omzet: 0, profit: 0, unit: 0 };
+    cur.omzet += Number(t.omzet);
+    cur.profit += Number(t.profit);
+    cur.unit += Number(t.qty);
+    map.set(month, cur);
+  }
+  const monthly: MonthlyPoint[] = [...map.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([month, v]) => ({
+      month,
+      omzet: v.omzet,
+      profit: v.profit,
+      unit: v.unit,
+      margin: v.omzet > 0 ? (v.profit / v.omzet) * 100 : 0,
+    }));
+
+  return {
+    transactions,
+    monthly,
+    totals: {
+      omzet: totOmzet,
+      profit: totProfit,
+      unit: totUnit,
+      margin: totOmzet > 0 ? (totProfit / totOmzet) * 100 : 0,
+    },
+  };
+}
